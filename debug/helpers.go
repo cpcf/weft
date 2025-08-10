@@ -37,32 +37,127 @@ func debugValue(debugMode *DebugMode) func(interface{}) string {
 		}
 
 		v := reflect.ValueOf(value)
-		switch v.Kind() {
-		case reflect.String:
-			return fmt.Sprintf("string(%d): %q", len(v.String()), v.String())
-		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-			return fmt.Sprintf("int: %d", v.Int())
-		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-			return fmt.Sprintf("uint: %d", v.Uint())
-		case reflect.Float32, reflect.Float64:
-			return fmt.Sprintf("float: %g", v.Float())
-		case reflect.Bool:
-			return fmt.Sprintf("bool: %t", v.Bool())
-		case reflect.Slice, reflect.Array:
-			return fmt.Sprintf("%s[%d]: %v", v.Type(), v.Len(), value)
-		case reflect.Map:
-			return fmt.Sprintf("%s{%d keys}: %v", v.Type(), v.Len(), value)
-		case reflect.Struct:
-			return fmt.Sprintf("%s: %+v", v.Type(), value)
-		case reflect.Ptr:
-			if v.IsNil() {
-				return fmt.Sprintf("%s: <nil>", v.Type())
-			}
-			return fmt.Sprintf("%s: -> %s", v.Type(), debugValue(debugMode)(v.Elem().Interface()))
-		default:
-			return fmt.Sprintf("%s: %v", v.Type(), value)
-		}
+		return formatValueByKind(v, value, debugMode)
 	}
+}
+
+type valueFormatter func(reflect.Value, interface{}, *DebugMode) string
+
+var intKinds = map[reflect.Kind]bool{
+	reflect.Int: true, reflect.Int8: true, reflect.Int16: true,
+	reflect.Int32: true, reflect.Int64: true,
+}
+
+var uintKinds = map[reflect.Kind]bool{
+	reflect.Uint: true, reflect.Uint8: true, reflect.Uint16: true,
+	reflect.Uint32: true, reflect.Uint64: true,
+}
+
+var floatKinds = map[reflect.Kind]bool{
+	reflect.Float32: true, reflect.Float64: true,
+}
+
+func getTypeFormatters() map[reflect.Kind]valueFormatter {
+	return map[reflect.Kind]valueFormatter{
+		reflect.String:  formatStringValueWithContext,
+		reflect.Bool:    formatBoolValueWithContext,
+		reflect.Slice:   formatSliceArrayValueWithContext,
+		reflect.Array:   formatSliceArrayValueWithContext,
+		reflect.Map:     formatMapValueWithContext,
+		reflect.Struct:  formatStructValueWithContext,
+		reflect.Ptr:     formatPtrValueWithContext,
+	}
+}
+
+func formatValueByKind(v reflect.Value, value interface{}, debugMode *DebugMode) string {
+	kind := v.Kind()
+	
+	// Check specific type formatters first
+	typeFormatters := getTypeFormatters()
+	if formatter, exists := typeFormatters[kind]; exists {
+		return formatter(v, value, debugMode)
+	}
+	
+	// Handle numeric types with maps for better performance
+	if intKinds[kind] {
+		return formatIntValue(v)
+	}
+	if uintKinds[kind] {
+		return formatUintValue(v)
+	}
+	if floatKinds[kind] {
+		return formatFloatValue(v)
+	}
+	
+	return formatDefaultValue(v, value)
+}
+
+func formatStringValue(v reflect.Value) string {
+	return fmt.Sprintf("string(%d): %q", len(v.String()), v.String())
+}
+
+func formatIntValue(v reflect.Value) string {
+	return fmt.Sprintf("int: %d", v.Int())
+}
+
+func formatUintValue(v reflect.Value) string {
+	return fmt.Sprintf("uint: %d", v.Uint())
+}
+
+func formatFloatValue(v reflect.Value) string {
+	return fmt.Sprintf("float: %g", v.Float())
+}
+
+func formatBoolValue(v reflect.Value) string {
+	return fmt.Sprintf("bool: %t", v.Bool())
+}
+
+func formatSliceArrayValue(v reflect.Value, value interface{}) string {
+	return fmt.Sprintf("%s[%d]: %v", v.Type(), v.Len(), value)
+}
+
+func formatMapValue(v reflect.Value, value interface{}) string {
+	return fmt.Sprintf("%s{%d keys}: %v", v.Type(), v.Len(), value)
+}
+
+func formatStructValue(v reflect.Value, value interface{}) string {
+	return fmt.Sprintf("%s: %+v", v.Type(), value)
+}
+
+func formatPtrValue(v reflect.Value, debugMode *DebugMode) string {
+	if v.IsNil() {
+		return fmt.Sprintf("%s: <nil>", v.Type())
+	}
+	return fmt.Sprintf("%s: -> %s", v.Type(), debugValue(debugMode)(v.Elem().Interface()))
+}
+
+// Context-aware formatters that match the valueFormatter signature
+func formatStringValueWithContext(v reflect.Value, value interface{}, debugMode *DebugMode) string {
+	return formatStringValue(v)
+}
+
+func formatBoolValueWithContext(v reflect.Value, value interface{}, debugMode *DebugMode) string {
+	return formatBoolValue(v)
+}
+
+func formatSliceArrayValueWithContext(v reflect.Value, value interface{}, debugMode *DebugMode) string {
+	return formatSliceArrayValue(v, value)
+}
+
+func formatMapValueWithContext(v reflect.Value, value interface{}, debugMode *DebugMode) string {
+	return formatMapValue(v, value)
+}
+
+func formatStructValueWithContext(v reflect.Value, value interface{}, debugMode *DebugMode) string {
+	return formatStructValue(v, value)
+}
+
+func formatPtrValueWithContext(v reflect.Value, value interface{}, debugMode *DebugMode) string {
+	return formatPtrValue(v, debugMode)
+}
+
+func formatDefaultValue(v reflect.Value, value interface{}) string {
+	return fmt.Sprintf("%s: %v", v.Type(), value)
 }
 
 func debugType(debugMode *DebugMode) func(interface{}) string {
