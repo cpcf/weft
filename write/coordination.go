@@ -249,16 +249,29 @@ func (flm *FileLockManager) Stop() {
 	flm.locks = make(map[string]*FileLock)
 }
 
-func (flm *FileLockManager) GetActiveLocks() []FileLock {
+func (flm *FileLockManager) GetActiveLocks() []FileLockInfo {
 	flm.mu.RLock()
 	defer flm.mu.RUnlock()
 
-	locks := make([]FileLock, 0, len(flm.locks))
+	locks := make([]FileLockInfo, 0, len(flm.locks))
 	for _, lock := range flm.locks {
-		locks = append(locks, *lock)
+		locks = append(locks, FileLockInfo{
+			Path:     lock.Path,
+			Acquired: lock.Acquired,
+			Owner:    lock.Owner,
+			Refs:     lock.refs,
+		})
 	}
 
 	return locks
+}
+
+// FileLockInfo contains the serializable information about a file lock
+type FileLockInfo struct {
+	Path     string    `json:"path"`
+	Acquired time.Time `json:"acquired"`
+	Owner    string    `json:"owner"`
+	Refs     int       `json:"refs"`
 }
 
 type CoordinatedWriter struct {
@@ -366,7 +379,7 @@ func (cwm *ConcurrentWriteManager) GetStats() ConcurrentWriteStats {
 }
 
 type ConcurrentWriteStats struct {
-	ActiveLocks int        `json:"active_locks"`
-	WriterCount int        `json:"writer_count"`
-	LockDetails []FileLock `json:"lock_details"`
+	ActiveLocks int            `json:"active_locks"`
+	WriterCount int            `json:"writer_count"`
+	LockDetails []FileLockInfo `json:"lock_details"`
 }
