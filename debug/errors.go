@@ -90,10 +90,31 @@ func (ee *EnhancedError) GetContext() *ErrorContext {
 func (ee *EnhancedError) FormatDetailed() string {
 	var builder strings.Builder
 
+	// Basic error information
+	ee.writeBasicInfo(&builder)
+	
+	// Optional file/location information
+	ee.writeLocationInfo(&builder)
+	
+	// Context data
+	ee.writeContextData(&builder)
+	
+	// Suggestions
+	ee.writeSuggestions(&builder)
+	
+	// Stack trace
+	ee.writeStackTrace(&builder)
+
+	return builder.String()
+}
+
+func (ee *EnhancedError) writeBasicInfo(builder *strings.Builder) {
 	builder.WriteString(fmt.Sprintf("Error: %s\n", ee.originalError.Error()))
 	builder.WriteString(fmt.Sprintf("Operation: %s\n", ee.context.Operation))
 	builder.WriteString(fmt.Sprintf("Timestamp: %s\n", ee.context.Timestamp.Format(time.RFC3339)))
+}
 
+func (ee *EnhancedError) writeLocationInfo(builder *strings.Builder) {
 	if ee.context.TemplatePath != "" {
 		builder.WriteString(fmt.Sprintf("Template: %s\n", ee.context.TemplatePath))
 	}
@@ -105,38 +126,48 @@ func (ee *EnhancedError) FormatDetailed() string {
 	if ee.context.LineNumber > 0 {
 		builder.WriteString(fmt.Sprintf("Line: %d\n", ee.context.LineNumber))
 	}
+}
 
-	if len(ee.context.Context) > 0 {
-		builder.WriteString("\nContext:\n")
-		keys := make([]string, 0, len(ee.context.Context))
-		for k := range ee.context.Context {
-			keys = append(keys, k)
-		}
-		sort.Strings(keys)
-		
-		for _, key := range keys {
-			builder.WriteString(fmt.Sprintf("  %s: %v\n", key, ee.context.Context[key]))
-		}
+func (ee *EnhancedError) writeContextData(builder *strings.Builder) {
+	if len(ee.context.Context) == 0 {
+		return
 	}
-
-	if len(ee.context.Suggestions) > 0 {
-		builder.WriteString("\nSuggestions:\n")
-		for i, suggestion := range ee.context.Suggestions {
-			builder.WriteString(fmt.Sprintf("  %d. %s\n", i+1, suggestion))
-		}
+	
+	builder.WriteString("\nContext:\n")
+	keys := make([]string, 0, len(ee.context.Context))
+	for k := range ee.context.Context {
+		keys = append(keys, k)
 	}
-
-	if len(ee.context.Stack) > 0 {
-		builder.WriteString("\nStack trace:\n")
-		for i, frame := range ee.context.Stack {
-			if i >= 5 { // Limit stack trace depth
-				break
-			}
-			builder.WriteString(fmt.Sprintf("  %s:%d %s\n", frame.File, frame.Line, frame.Function))
-		}
+	sort.Strings(keys)
+	
+	for _, key := range keys {
+		builder.WriteString(fmt.Sprintf("  %s: %v\n", key, ee.context.Context[key]))
 	}
+}
 
-	return builder.String()
+func (ee *EnhancedError) writeSuggestions(builder *strings.Builder) {
+	if len(ee.context.Suggestions) == 0 {
+		return
+	}
+	
+	builder.WriteString("\nSuggestions:\n")
+	for i, suggestion := range ee.context.Suggestions {
+		builder.WriteString(fmt.Sprintf("  %d. %s\n", i+1, suggestion))
+	}
+}
+
+func (ee *EnhancedError) writeStackTrace(builder *strings.Builder) {
+	if len(ee.context.Stack) == 0 {
+		return
+	}
+	
+	builder.WriteString("\nStack trace:\n")
+	for i, frame := range ee.context.Stack {
+		if i >= 5 { // Limit stack trace depth
+			break
+		}
+		builder.WriteString(fmt.Sprintf("  %s:%d %s\n", frame.File, frame.Line, frame.Function))
+	}
 }
 
 func captureStack(skip int) []StackFrame {

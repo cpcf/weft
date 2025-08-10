@@ -99,19 +99,7 @@ func NewDebugMode(opts ...DebugOption) *DebugMode {
 }
 
 func (dm *DebugMode) setupLogger() {
-	var level slog.Level
-	switch dm.level {
-	case LevelError:
-		level = slog.LevelError
-	case LevelWarn:
-		level = slog.LevelWarn
-	case LevelInfo:
-		level = slog.LevelInfo
-	case LevelDebug, LevelTrace:
-		level = slog.LevelDebug
-	default:
-		level = slog.LevelError
-	}
+	level := dm.mapDebugLevelToSlogLevel()
 
 	opts := &slog.HandlerOptions{
 		Level: level,
@@ -120,6 +108,21 @@ func (dm *DebugMode) setupLogger() {
 
 	handler := slog.NewTextHandler(dm.output, opts)
 	dm.logger = slog.New(handler)
+}
+
+func (dm *DebugMode) mapDebugLevelToSlogLevel() slog.Level {
+	switch dm.level {
+	case LevelError:
+		return slog.LevelError
+	case LevelWarn:
+		return slog.LevelWarn
+	case LevelInfo:
+		return slog.LevelInfo
+	case LevelDebug, LevelTrace:
+		return slog.LevelDebug
+	default:
+		return slog.LevelError
+	}
 }
 
 func (dm *DebugMode) IsEnabled(level DebugLevel) bool {
