@@ -133,7 +133,7 @@ func (sm *SnapshotManager) generateDiff(expected, actual string) string {
 	var diff strings.Builder
 	maxLines := max(len(actualLines), len(expectedLines))
 
-	for i := 0; i < maxLines; i++ {
+	for i := range maxLines {
 		var expectedLine, actualLine string
 
 		if i < len(expectedLines) {

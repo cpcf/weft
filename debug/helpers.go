@@ -110,7 +110,7 @@ func filterSensitiveData(key string, value any) any {
 
 	// Check for sensitive values (basic heuristics)
 	if str, ok := value.(string); ok {
-		if len(str) > 20 && (strings.Contains(str, "-----BEGIN") || 
+		if len(str) > 20 && (strings.Contains(str, "-----BEGIN") ||
 			strings.HasPrefix(str, "sk-") ||
 			strings.HasPrefix(str, "pk-") ||
 			len(str) == 32 || len(str) == 64) { // Common key lengths
@@ -126,15 +126,15 @@ func isSensitiveFieldName(key string) bool {
 	if key == "" {
 		return false
 	}
-	
+
 	lowerKey := strings.ToLower(key)
-	
+
 	// Check for exact matches or specific patterns
 	for _, pattern := range sensitiveFieldPatterns {
-		if lowerKey == pattern || 
-		   strings.HasSuffix(lowerKey, "_"+pattern) ||
-		   strings.HasPrefix(lowerKey, pattern+"_") ||
-		   strings.Contains(lowerKey, "_"+pattern+"_") {
+		if lowerKey == pattern ||
+			strings.HasSuffix(lowerKey, "_"+pattern) ||
+			strings.HasPrefix(lowerKey, pattern+"_") ||
+			strings.Contains(lowerKey, "_"+pattern+"_") {
 			return true
 		}
 	}
@@ -247,25 +247,25 @@ func getCachedType(v any) reflect.Type {
 	if v == nil {
 		return nil
 	}
-	
+
 	ptr := (*[2]uintptr)(unsafe.Pointer(&v))[1]
-	
+
 	globalTypeCache.mu.RLock()
 	cachedType, exists := globalTypeCache.types[ptr]
 	globalTypeCache.mu.RUnlock()
-	
+
 	if exists {
 		return cachedType
 	}
-	
+
 	globalTypeCache.mu.Lock()
 	defer globalTypeCache.mu.Unlock()
-	
+
 	// Double-check after acquiring write lock
 	if cachedType, exists := globalTypeCache.types[ptr]; exists {
 		return cachedType
 	}
-	
+
 	t := reflect.TypeOf(v)
 	globalTypeCache.types[ptr] = t
 	return t
@@ -437,7 +437,7 @@ func debugKeys(debugMode *DebugMode) func(any) []string {
 
 		v := reflect.ValueOf(value)
 		kind := v.Kind()
-		
+
 		switch kind {
 		case reflect.Map:
 			mapKeys := v.MapKeys()
@@ -451,7 +451,7 @@ func debugKeys(debugMode *DebugMode) func(any) []string {
 			t := v.Type()
 			numFields := t.NumField()
 			fields := make([]string, 0, numFields)
-			for i := 0; i < numFields; i++ {
+			for i := range numFields {
 				field := t.Field(i)
 				if field.IsExported() {
 					fields = append(fields, field.Name)
@@ -614,7 +614,7 @@ func (td *TemplateDebugger) RegisterTemplate(name string, tmpl *template.Templat
 func (td *TemplateDebugger) ExecuteWithDebug(name string, tmpl *template.Template, data any) (string, error) {
 	// Generate cache key for potential caching (only for read-only operations)
 	cacheKey := fmt.Sprintf("%s:%p", name, data)
-	
+
 	// Check cache for identical executions (optional optimization for read-only templates)
 	if cached := td.checkExecutionCache(cacheKey); cached != nil {
 		return cached.result, nil
@@ -660,7 +660,7 @@ func (td *TemplateDebugger) ExecuteWithDebug(name string, tmpl *template.Templat
 				"duration", execution.Duration,
 				"output_size", len(execution.Output))
 		}
-		
+
 		// Cache successful executions for potential reuse
 		td.cacheExecution(cacheKey, execution.Output)
 	}
@@ -679,7 +679,7 @@ func (td *TemplateDebugger) ExecuteWithDebug(name string, tmpl *template.Templat
 func (td *TemplateDebugger) checkExecutionCache(cacheKey string) *cachedExecution {
 	globalExecutionCache.mu.RLock()
 	defer globalExecutionCache.mu.RUnlock()
-	
+
 	if cached, exists := globalExecutionCache.cache[cacheKey]; exists {
 		if time.Since(cached.timestamp) < cached.ttl {
 			return &cached
@@ -692,13 +692,13 @@ func (td *TemplateDebugger) checkExecutionCache(cacheKey string) *cachedExecutio
 func (td *TemplateDebugger) cacheExecution(cacheKey, result string) {
 	globalExecutionCache.mu.Lock()
 	defer globalExecutionCache.mu.Unlock()
-	
+
 	globalExecutionCache.cache[cacheKey] = cachedExecution{
 		result:    result,
 		timestamp: time.Now(),
 		ttl:       5 * time.Minute, // Cache for 5 minutes
 	}
-	
+
 	// Clean old entries periodically
 	if len(globalExecutionCache.cache) > 100 {
 		td.cleanExpiredCache()
