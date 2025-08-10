@@ -2,6 +2,8 @@ package debug
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"runtime"
 	"sort"
 	"strings"
@@ -71,6 +73,54 @@ type StackFrame struct {
 	Function string `json:"function"`
 	File     string `json:"file"`
 	Line     int    `json:"line"`
+}
+
+// Security filter for sensitive paths
+var sensitivePathPrefixes = []string{
+	"/home/",
+	"/Users/", 
+	"/tmp/",
+	"/var/",
+	"/etc/",
+	"C:\\Users\\",
+	"C:\\Windows\\",
+	"C:\\temp\\",
+	"C:\\tmp\\",
+}
+
+// filterSensitivePath removes or masks sensitive parts of file paths
+func filterSensitivePath(path string) string {
+	if path == "" {
+		return path
+	}
+
+	// Check for sensitive prefixes
+	for _, prefix := range sensitivePathPrefixes {
+		if strings.HasPrefix(path, prefix) {
+			// Replace with relative path or mask sensitive parts
+			if wd, err := os.Getwd(); err == nil {
+				if relPath, err := filepath.Rel(wd, path); err == nil && !strings.HasPrefix(relPath, "..") {
+					return relPath
+				}
+			}
+			// Mask the sensitive prefix
+			masked := "***" + path[len(prefix):]
+			return masked
+		}
+	}
+
+	// Check for other sensitive patterns
+	if strings.Contains(path, "/.ssh/") || strings.Contains(path, "\\.ssh\\") {
+		return "[REDACTED SSH PATH]"
+	}
+	if strings.Contains(path, "/.aws/") || strings.Contains(path, "\\.aws\\") {
+		return "[REDACTED AWS PATH]"
+	}
+	if strings.Contains(path, "/.config/") || strings.Contains(path, "\\AppData\\") {
+		return "[REDACTED CONFIG PATH]"
+	}
+
+	return path
 }
 
 type EnhancedError struct {
@@ -213,7 +263,10 @@ func (ee *EnhancedError) writeStackTrace(builder *strings.Builder) {
 		if i >= globalConfig.MaxStackTraceDisplay {
 			break
 		}
-		builder.WriteString(fmt.Sprintf("  %s:%d %s\n", frame.File, frame.Line, frame.Function))
+		// Additional security filtering at display time
+		displayFile := filterSensitivePath(frame.File)
+		displayFunction := filterSensitiveFunction(frame.Function)
+		builder.WriteString(fmt.Sprintf("  %s:%d %s\n", displayFile, frame.Line, displayFunction))
 	}
 }
 
@@ -231,9 +284,13 @@ func captureStack(skip int) []StackFrame {
 			continue
 		}
 
+		// Apply security filtering to file paths
+		filteredFile := filterSensitivePath(file)
+		filteredFunction := filterSensitiveFunction(fn.Name())
+
 		frames = append(frames, StackFrame{
-			Function: fn.Name(),
-			File:     file,
+			Function: filteredFunction,
+			File:     filteredFile,
 			Line:     line,
 		})
 
@@ -243,6 +300,33 @@ func captureStack(skip int) []StackFrame {
 	}
 
 	return frames
+}
+
+// filterSensitiveFunction removes or masks sensitive function names
+func filterSensitiveFunction(funcName string) string {
+	if funcName == "" {
+		return funcName
+	}
+
+	// Filter out potentially sensitive function patterns
+	sensitivePatterns := []string{
+		"crypto",
+		"password", 
+		"token",
+		"secret",
+		"key",
+		"auth",
+	}
+
+	lowerFunc := strings.ToLower(funcName)
+	for _, pattern := range sensitivePatterns {
+		if strings.Contains(lowerFunc, pattern) {
+			// Don't completely hide, but indicate filtering
+			return "[FILTERED]" + strings.Split(funcName, ".")[len(strings.Split(funcName, "."))-1]
+		}
+	}
+
+	return funcName
 }
 
 type ErrorAnalyzer struct {

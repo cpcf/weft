@@ -42,6 +42,35 @@ func NewTemplateValidator(templateFS fs.FS, funcMap template.FuncMap, debugMode 
 	}
 }
 
+// isSecurePath checks if a path is safe from traversal attacks
+func isSecurePath(path string) bool {
+	// Check for path traversal patterns
+	if strings.Contains(path, "..") {
+		return false
+	}
+	
+	// Check for absolute paths that might escape the template directory
+	if filepath.IsAbs(path) {
+		return false
+	}
+	
+	// Check for dangerous patterns
+	dangerousPatterns := []string{
+		"//", "\\\\", // Double slashes
+		"/etc/", "/sys/", "/proc/", "/dev/", // Unix system directories
+		"C:\\", "D:\\", // Windows drive letters
+		"~", // Home directory reference
+	}
+	
+	for _, pattern := range dangerousPatterns {
+		if strings.Contains(path, pattern) {
+			return false
+		}
+	}
+	
+	return true
+}
+
 func (tv *TemplateValidator) SetStrict(strict bool) {
 	tv.strict = strict
 }
@@ -52,6 +81,18 @@ func (tv *TemplateValidator) ValidateTemplate(templatePath string) ValidationRes
 		Errors:   make([]ValidationError, 0),
 		Warnings: make([]ValidationError, 0),
 		Info:     make([]string, 0),
+	}
+
+	// Security check: validate path for traversal attacks
+	if !isSecurePath(templatePath) {
+		result.Valid = false
+		result.Errors = append(result.Errors, ValidationError{
+			Type:       "security_error",
+			Message:    "Template path contains unsafe characters or path traversal patterns",
+			File:       templatePath,
+			Suggestion: "Use relative paths without '..' or absolute path references",
+		})
+		return result
 	}
 
 	content, err := fs.ReadFile(tv.fs, templatePath)
@@ -228,6 +269,18 @@ func (tv *TemplateValidator) validatePartials(templatePath, content string, resu
 
 		partialName := match[1]
 
+		// Security check: validate partial name for traversal attacks
+		if !isSecurePath(partialName) {
+			result.Valid = false
+			result.Errors = append(result.Errors, ValidationError{
+				Type:       "security_error",
+				Message:    fmt.Sprintf("Partial template name '%s' contains unsafe path characters", partialName),
+				File:       templatePath,
+				Suggestion: "Use safe relative paths without '..' or absolute references",
+			})
+			continue
+		}
+
 		partialPath := tv.resolvePartialPath(templatePath, partialName)
 		if partialPath == "" {
 			result.Valid = false
@@ -251,6 +304,18 @@ func (tv *TemplateValidator) validateIncludes(templatePath, content string, resu
 		}
 
 		includePath := match[1]
+
+		// Security check: validate include path for traversal attacks
+		if !isSecurePath(includePath) {
+			result.Valid = false
+			result.Errors = append(result.Errors, ValidationError{
+				Type:       "security_error",
+				Message:    fmt.Sprintf("Include path '%s' contains unsafe path characters", includePath),
+				File:       templatePath,
+				Suggestion: "Use safe relative paths without '..' or absolute references",
+			})
+			continue
+		}
 
 		resolvedPath := tv.resolveIncludePath(templatePath, includePath)
 		if resolvedPath == "" {
@@ -276,6 +341,10 @@ func (tv *TemplateValidator) resolvePartialPath(templatePath, partialName string
 	}
 
 	for _, candidate := range candidates {
+		// Additional security check for resolved paths
+		if !isSecurePath(candidate) {
+			continue
+		}
 		if _, err := fs.Stat(tv.fs, candidate); err == nil {
 			return candidate
 		}
@@ -300,6 +369,10 @@ func (tv *TemplateValidator) resolveIncludePath(templatePath, includePath string
 	}
 
 	for _, candidate := range candidates {
+		// Additional security check for resolved paths
+		if !isSecurePath(candidate) {
+			continue
+		}
 		if _, err := fs.Stat(tv.fs, candidate); err == nil {
 			return candidate
 		}
