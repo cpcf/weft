@@ -953,3 +953,44 @@ func TestDebugFuncMapWithDisabledDebug(t *testing.T) {
 		t.Errorf("Expected empty output when debug disabled, got '%s'", result)
 	}
 }
+
+func TestConfigurableExecutionBuffer(t *testing.T) {
+	originalConfig := GetConfig()
+	defer func() {
+		_ = SetConfig(originalConfig)
+	}()
+
+	// Test with smaller buffer size
+	err := SetConfig(Config{
+		MaxStackFrames:       10,
+		ErrorBufferSize:      100,
+		ExecutionBufferSize:  3,
+		MaxStackTraceDisplay: 5,
+	})
+	if err != nil {
+		t.Fatalf("Unexpected error setting config: %v", err)
+	}
+
+	dm := NewDebugMode(WithLevel(LevelDebug))
+	td := NewTemplateDebugger(dm)
+
+	tmpl, err := template.New("test").Parse("Hello {{.Name}}")
+	if err != nil {
+		t.Fatalf("Failed to parse template: %v", err)
+	}
+
+	data := map[string]any{"Name": "World"}
+
+	// Execute more templates than buffer size
+	for i := 0; i < 5; i++ {
+		_, err = td.ExecuteWithDebug(fmt.Sprintf("test%d", i), tmpl, data)
+		if err != nil {
+			t.Fatalf("Failed to execute template %d: %v", i, err)
+		}
+	}
+
+	executions := td.GetExecutions()
+	if len(executions) > 3 {
+		t.Errorf("Expected execution buffer to be limited to 3, got %d", len(executions))
+	}
+}

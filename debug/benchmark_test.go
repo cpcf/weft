@@ -461,7 +461,7 @@ func BenchmarkConcurrentAccess(b *testing.B) {
 			i := 0
 			for pb.Next() {
 				dm.Info("concurrent message", "goroutine", i)
-				dm.SetLevel(LevelDebug)
+				_ = dm.SetLevel(LevelDebug)
 				_ = dm.IsEnabled(LevelInfo)
 				_ = dm.GetStats()
 				i++

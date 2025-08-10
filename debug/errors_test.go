@@ -714,3 +714,200 @@ func TestSuggestTemplateErrors_CombinedErrors(t *testing.T) {
 		}
 	}
 }
+
+func TestDefaultConfig(t *testing.T) {
+	config := DefaultConfig()
+
+	if config.MaxStackFrames != 10 {
+		t.Errorf("Expected MaxStackFrames to be 10, got %d", config.MaxStackFrames)
+	}
+	if config.ErrorBufferSize != 100 {
+		t.Errorf("Expected ErrorBufferSize to be 100, got %d", config.ErrorBufferSize)
+	}
+	if config.ExecutionBufferSize != 100 {
+		t.Errorf("Expected ExecutionBufferSize to be 100, got %d", config.ExecutionBufferSize)
+	}
+	if config.MaxStackTraceDisplay != 5 {
+		t.Errorf("Expected MaxStackTraceDisplay to be 5, got %d", config.MaxStackTraceDisplay)
+	}
+}
+
+func TestSetConfig(t *testing.T) {
+	originalConfig := GetConfig()
+	defer func() {
+		_ = SetConfig(originalConfig)
+	}()
+
+	tests := []struct {
+		name        string
+		config      Config
+		expectError bool
+	}{
+		{
+			name: "valid config",
+			config: Config{
+				MaxStackFrames:       20,
+				ErrorBufferSize:      200,
+				ExecutionBufferSize:  150,
+				MaxStackTraceDisplay: 10,
+			},
+			expectError: false,
+		},
+		{
+			name: "MaxStackFrames too small",
+			config: Config{
+				MaxStackFrames:       0,
+				ErrorBufferSize:      100,
+				ExecutionBufferSize:  100,
+				MaxStackTraceDisplay: 5,
+			},
+			expectError: true,
+		},
+		{
+			name: "MaxStackFrames too large",
+			config: Config{
+				MaxStackFrames:       101,
+				ErrorBufferSize:      100,
+				ExecutionBufferSize:  100,
+				MaxStackTraceDisplay: 5,
+			},
+			expectError: true,
+		},
+		{
+			name: "ErrorBufferSize too small",
+			config: Config{
+				MaxStackFrames:       10,
+				ErrorBufferSize:      0,
+				ExecutionBufferSize:  100,
+				MaxStackTraceDisplay: 5,
+			},
+			expectError: true,
+		},
+		{
+			name: "ErrorBufferSize too large",
+			config: Config{
+				MaxStackFrames:       10,
+				ErrorBufferSize:      10001,
+				ExecutionBufferSize:  100,
+				MaxStackTraceDisplay: 5,
+			},
+			expectError: true,
+		},
+		{
+			name: "ExecutionBufferSize too small",
+			config: Config{
+				MaxStackFrames:       10,
+				ErrorBufferSize:      100,
+				ExecutionBufferSize:  0,
+				MaxStackTraceDisplay: 5,
+			},
+			expectError: true,
+		},
+		{
+			name: "ExecutionBufferSize too large",
+			config: Config{
+				MaxStackFrames:       10,
+				ErrorBufferSize:      100,
+				ExecutionBufferSize:  10001,
+				MaxStackTraceDisplay: 5,
+			},
+			expectError: true,
+		},
+		{
+			name: "MaxStackTraceDisplay too small",
+			config: Config{
+				MaxStackFrames:       10,
+				ErrorBufferSize:      100,
+				ExecutionBufferSize:  100,
+				MaxStackTraceDisplay: 0,
+			},
+			expectError: true,
+		},
+		{
+			name: "MaxStackTraceDisplay larger than MaxStackFrames",
+			config: Config{
+				MaxStackFrames:       10,
+				ErrorBufferSize:      100,
+				ExecutionBufferSize:  100,
+				MaxStackTraceDisplay: 15,
+			},
+			expectError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := SetConfig(tt.config)
+			if tt.expectError {
+				if err == nil {
+					t.Error("Expected error but got none")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Unexpected error: %v", err)
+				}
+				config := GetConfig()
+				if config.MaxStackFrames != tt.config.MaxStackFrames {
+					t.Errorf("Expected MaxStackFrames %d, got %d", tt.config.MaxStackFrames, config.MaxStackFrames)
+				}
+				if config.ErrorBufferSize != tt.config.ErrorBufferSize {
+					t.Errorf("Expected ErrorBufferSize %d, got %d", tt.config.ErrorBufferSize, config.ErrorBufferSize)
+				}
+			}
+		})
+	}
+}
+
+func TestConfigurableStackFrames(t *testing.T) {
+	originalConfig := GetConfig()
+	defer func() {
+		_ = SetConfig(originalConfig)
+	}()
+
+	// Test with different stack frame limits
+	err := SetConfig(Config{
+		MaxStackFrames:       3,
+		ErrorBufferSize:      100,
+		ExecutionBufferSize:  100,
+		MaxStackTraceDisplay: 2,
+	})
+	if err != nil {
+		t.Fatalf("Unexpected error setting config: %v", err)
+	}
+
+	stack := captureStack(0)
+	if len(stack) > 3 {
+		t.Errorf("Expected stack to be limited to 3 frames, got %d", len(stack))
+	}
+}
+
+func TestConfigurableErrorBuffer(t *testing.T) {
+	originalConfig := GetConfig()
+	defer func() {
+		_ = SetConfig(originalConfig)
+	}()
+
+	// Test with smaller buffer size
+	err := SetConfig(Config{
+		MaxStackFrames:       10,
+		ErrorBufferSize:      3,
+		ExecutionBufferSize:  100,
+		MaxStackTraceDisplay: 5,
+	})
+	if err != nil {
+		t.Fatalf("Unexpected error setting config: %v", err)
+	}
+
+	analyzer := NewErrorAnalyzer()
+
+	// Add more errors than buffer size
+	for i := 0; i < 5; i++ {
+		testErr := NewEnhancedError(fmt.Errorf("test error %d", i), "test_operation")
+		analyzer.AddError(testErr)
+	}
+
+	errors := analyzer.GetErrors()
+	if len(errors) > 3 {
+		t.Errorf("Expected error buffer to be limited to 3, got %d", len(errors))
+	}
+}

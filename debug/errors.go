@@ -9,6 +9,53 @@ import (
 	"time"
 )
 
+type Config struct {
+	MaxStackFrames       int `json:"max_stack_frames"`
+	ErrorBufferSize      int `json:"error_buffer_size"`
+	ExecutionBufferSize  int `json:"execution_buffer_size"`
+	MaxStackTraceDisplay int `json:"max_stack_trace_display"`
+}
+
+func DefaultConfig() Config {
+	return Config{
+		MaxStackFrames:       10,
+		ErrorBufferSize:      100,
+		ExecutionBufferSize:  100,
+		MaxStackTraceDisplay: 5,
+	}
+}
+
+var globalConfig = DefaultConfig()
+
+func SetConfig(config Config) error {
+	if err := validateConfig(config); err != nil {
+		return fmt.Errorf("invalid config: %w", err)
+	}
+	globalConfig = config
+	return nil
+}
+
+func validateConfig(config Config) error {
+	if config.MaxStackFrames < 1 || config.MaxStackFrames > 100 {
+		return fmt.Errorf("MaxStackFrames must be between 1 and 100, got %d", config.MaxStackFrames)
+	}
+	if config.ErrorBufferSize < 1 || config.ErrorBufferSize > 10000 {
+		return fmt.Errorf("ErrorBufferSize must be between 1 and 10000, got %d", config.ErrorBufferSize)
+	}
+	if config.ExecutionBufferSize < 1 || config.ExecutionBufferSize > 10000 {
+		return fmt.Errorf("ExecutionBufferSize must be between 1 and 10000, got %d", config.ExecutionBufferSize)
+	}
+	if config.MaxStackTraceDisplay < 1 || config.MaxStackTraceDisplay > config.MaxStackFrames {
+		return fmt.Errorf("MaxStackTraceDisplay must be between 1 and MaxStackFrames (%d), got %d", 
+			config.MaxStackFrames, config.MaxStackTraceDisplay)
+	}
+	return nil
+}
+
+func GetConfig() Config {
+	return globalConfig
+}
+
 type ErrorContext struct {
 	Operation    string         `json:"operation"`
 	TemplatePath string         `json:"template_path,omitempty"`
@@ -163,7 +210,7 @@ func (ee *EnhancedError) writeStackTrace(builder *strings.Builder) {
 
 	builder.WriteString("\nStack trace:\n")
 	for i, frame := range ee.context.Stack {
-		if i >= 5 { // Limit stack trace depth
+		if i >= globalConfig.MaxStackTraceDisplay {
 			break
 		}
 		builder.WriteString(fmt.Sprintf("  %s:%d %s\n", frame.File, frame.Line, frame.Function))
@@ -190,7 +237,7 @@ func captureStack(skip int) []StackFrame {
 			Line:     line,
 		})
 
-		if len(frames) >= 10 {
+		if len(frames) >= globalConfig.MaxStackFrames {
 			break
 		}
 	}
@@ -219,7 +266,7 @@ func (ea *ErrorAnalyzer) AddError(err *EnhancedError) {
 
 	ea.errors = append(ea.errors, *err)
 
-	if len(ea.errors) > 100 {
+	if len(ea.errors) > globalConfig.ErrorBufferSize {
 		ea.errors = ea.errors[1:]
 	}
 }

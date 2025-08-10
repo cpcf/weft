@@ -404,7 +404,7 @@ func (td *TemplateDebugger) ExecuteWithDebug(name string, tmpl *template.Templat
 
 	td.mu.Lock()
 	td.executions = append(td.executions, execution)
-	if len(td.executions) > 100 {
+	if len(td.executions) > GetConfig().ExecutionBufferSize {
 		td.executions = td.executions[1:]
 	}
 	td.mu.Unlock()
