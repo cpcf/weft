@@ -40,6 +40,10 @@ func (dl DebugLevel) String() string {
 	}
 }
 
+func isValidDebugLevel(level DebugLevel) bool {
+	return level >= LevelOff && level <= LevelTrace
+}
+
 type DebugMode struct {
 	level           DebugLevel
 	output          io.Writer
@@ -55,7 +59,11 @@ type DebugOption func(*DebugMode)
 
 func WithLevel(level DebugLevel) DebugOption {
 	return func(dm *DebugMode) {
-		dm.level = level
+		if isValidDebugLevel(level) {
+			dm.level = level
+		} else {
+			dm.level = LevelInfo // fallback to default
+		}
 	}
 }
 
@@ -131,11 +139,16 @@ func (dm *DebugMode) IsEnabled(level DebugLevel) bool {
 	return dm.level >= level
 }
 
-func (dm *DebugMode) SetLevel(level DebugLevel) {
+func (dm *DebugMode) SetLevel(level DebugLevel) error {
+	if !isValidDebugLevel(level) {
+		return fmt.Errorf("invalid debug level: %d (must be between %d and %d)", 
+			level, LevelOff, LevelTrace)
+	}
 	dm.mu.Lock()
 	defer dm.mu.Unlock()
 	dm.level = level
 	dm.setupLogger()
+	return nil
 }
 
 func (dm *DebugMode) Error(msg string, args ...any) {
