@@ -357,7 +357,7 @@ func CompareVersions(v1, v2 string) int {
 
 	maxLen := max(len(parts2), len(parts1))
 
-	for i := 0; i < maxLen; i++ {
+	for i := range maxLen {
 		var p1, p2 int
 		var err error
 

@@ -141,7 +141,7 @@ func (dm *DebugMode) IsEnabled(level DebugLevel) bool {
 
 func (dm *DebugMode) SetLevel(level DebugLevel) error {
 	if !isValidDebugLevel(level) {
-		return fmt.Errorf("invalid debug level: %d (must be between %d and %d)", 
+		return fmt.Errorf("invalid debug level: %d (must be between %d and %d)",
 			level, LevelOff, LevelTrace)
 	}
 	dm.mu.Lock()
@@ -194,10 +194,10 @@ func (dm *DebugMode) LogTemplateData(templatePath string, data any) {
 	if !dm.IsEnabled(LevelTrace) {
 		return
 	}
-	
+
 	// Apply security filtering before logging sensitive data
 	sanitizedData := sanitizeDataForLogging(data)
-	
+
 	// Lazy evaluation - only marshal JSON when trace level is actually enabled
 	dataJSON, _ := json.MarshalIndent(sanitizedData, "", "  ")
 	dm.Trace("template data",
@@ -241,7 +241,7 @@ func (dm *DebugMode) LogError(operation string, err error, context map[string]an
 	if !dm.IsEnabled(LevelError) {
 		return
 	}
-	
+
 	// Lazy evaluation - only build args array when error level is enabled
 	args := []any{"operation", operation, "error", err}
 	for k, v := range context {
@@ -313,7 +313,7 @@ func (dc *DebugContext) Info(msg string, args ...any) {
 	if !dc.mode.IsEnabled(LevelInfo) {
 		return
 	}
-	
+
 	// Lazy evaluation - only build args when info level is enabled
 	allArgs := []any{"operation", dc.operation, "duration", time.Since(dc.startTime)}
 	allArgs = append(allArgs, args...)
@@ -327,7 +327,7 @@ func (dc *DebugContext) Debug(msg string, args ...any) {
 	if !dc.mode.IsEnabled(LevelDebug) {
 		return
 	}
-	
+
 	// Lazy evaluation - only build args when debug level is enabled
 	allArgs := []any{"operation", dc.operation, "duration", time.Since(dc.startTime)}
 	allArgs = append(allArgs, args...)

@@ -48,7 +48,7 @@ func validateConfig(config Config) error {
 		return fmt.Errorf("ExecutionBufferSize must be between 1 and 10000, got %d", config.ExecutionBufferSize)
 	}
 	if config.MaxStackTraceDisplay < 1 || config.MaxStackTraceDisplay > config.MaxStackFrames {
-		return fmt.Errorf("MaxStackTraceDisplay must be between 1 and MaxStackFrames (%d), got %d", 
+		return fmt.Errorf("MaxStackTraceDisplay must be between 1 and MaxStackFrames (%d), got %d",
 			config.MaxStackFrames, config.MaxStackTraceDisplay)
 	}
 	return nil
@@ -78,7 +78,7 @@ type StackFrame struct {
 // Security filter for sensitive paths
 var sensitivePathPrefixes = []string{
 	"/home/",
-	"/Users/", 
+	"/Users/",
 	"/tmp/",
 	"/var/",
 	"/etc/",
@@ -311,7 +311,7 @@ func filterSensitiveFunction(funcName string) string {
 	// Filter out potentially sensitive function patterns
 	sensitivePatterns := []string{
 		"crypto",
-		"password", 
+		"password",
 		"token",
 		"secret",
 		"key",

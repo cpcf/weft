@@ -901,7 +901,7 @@ func TestConfigurableErrorBuffer(t *testing.T) {
 	analyzer := NewErrorAnalyzer()
 
 	// Add more errors than buffer size
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		testErr := NewEnhancedError(fmt.Errorf("test error %d", i), "test_operation")
 		analyzer.AddError(testErr)
 	}

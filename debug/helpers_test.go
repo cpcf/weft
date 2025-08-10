@@ -982,7 +982,7 @@ func TestConfigurableExecutionBuffer(t *testing.T) {
 	data := map[string]any{"Name": "World"}
 
 	// Execute more templates than buffer size
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		_, err = td.ExecuteWithDebug(fmt.Sprintf("test%d", i), tmpl, data)
 		if err != nil {
 			t.Fatalf("Failed to execute template %d: %v", i, err)
