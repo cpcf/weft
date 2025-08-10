@@ -191,12 +191,41 @@ func (dm *DebugMode) LogTemplateExecution(templatePath string, data any, duratio
 }
 
 func (dm *DebugMode) LogTemplateData(templatePath string, data any) {
-	if dm.IsEnabled(LevelTrace) {
-		dataJSON, _ := json.MarshalIndent(data, "", "  ")
-		dm.Trace("template data",
-			"path", templatePath,
-			"data", string(dataJSON))
+	if !dm.IsEnabled(LevelTrace) {
+		return
 	}
+	
+	// Apply security filtering before logging sensitive data
+	sanitizedData := sanitizeDataForLogging(data)
+	
+	// Lazy evaluation - only marshal JSON when trace level is actually enabled
+	dataJSON, _ := json.MarshalIndent(sanitizedData, "", "  ")
+	dm.Trace("template data",
+		"path", templatePath,
+		"data", string(dataJSON))
+}
+
+// sanitizeDataForLogging sanitizes data before logging to prevent sensitive data exposure
+func sanitizeDataForLogging(data any) any {
+	if data == nil {
+		return nil
+	}
+
+	// Basic sanitization for template data logging
+	if mapData, ok := data.(map[string]any); ok {
+		sanitized := make(map[string]any)
+		for k, v := range mapData {
+			// Use the more sophisticated filtering logic from helpers.go
+			if isSensitiveFieldName(k) {
+				sanitized[k] = "[REDACTED]"
+			} else {
+				sanitized[k] = v
+			}
+		}
+		return sanitized
+	}
+
+	return data
 }
 
 func (dm *DebugMode) LogFileWrite(path string, size int, duration time.Duration) {
@@ -209,13 +238,16 @@ func (dm *DebugMode) LogFileWrite(path string, size int, duration time.Duration)
 }
 
 func (dm *DebugMode) LogError(operation string, err error, context map[string]any) {
-	if dm.IsEnabled(LevelError) {
-		args := []any{"operation", operation, "error", err}
-		for k, v := range context {
-			args = append(args, k, v)
-		}
-		dm.Error("operation failed", args...)
+	if !dm.IsEnabled(LevelError) {
+		return
 	}
+	
+	// Lazy evaluation - only build args array when error level is enabled
+	args := []any{"operation", operation, "error", err}
+	for k, v := range context {
+		args = append(args, k, v)
+	}
+	dm.Error("operation failed", args...)
 }
 
 func (dm *DebugMode) GetStats() DebugStats {
@@ -278,25 +310,31 @@ func (dc *DebugContext) Error(msg string, err error) {
 }
 
 func (dc *DebugContext) Info(msg string, args ...any) {
-	if dc.mode.IsEnabled(LevelInfo) {
-		allArgs := []any{"operation", dc.operation, "duration", time.Since(dc.startTime)}
-		allArgs = append(allArgs, args...)
-		for k, v := range dc.attributes {
-			allArgs = append(allArgs, k, v)
-		}
-		dc.mode.Info(msg, allArgs...)
+	if !dc.mode.IsEnabled(LevelInfo) {
+		return
 	}
+	
+	// Lazy evaluation - only build args when info level is enabled
+	allArgs := []any{"operation", dc.operation, "duration", time.Since(dc.startTime)}
+	allArgs = append(allArgs, args...)
+	for k, v := range dc.attributes {
+		allArgs = append(allArgs, k, v)
+	}
+	dc.mode.Info(msg, allArgs...)
 }
 
 func (dc *DebugContext) Debug(msg string, args ...any) {
-	if dc.mode.IsEnabled(LevelDebug) {
-		allArgs := []any{"operation", dc.operation, "duration", time.Since(dc.startTime)}
-		allArgs = append(allArgs, args...)
-		for k, v := range dc.attributes {
-			allArgs = append(allArgs, k, v)
-		}
-		dc.mode.Debug(msg, allArgs...)
+	if !dc.mode.IsEnabled(LevelDebug) {
+		return
 	}
+	
+	// Lazy evaluation - only build args when debug level is enabled
+	allArgs := []any{"operation", dc.operation, "duration", time.Since(dc.startTime)}
+	allArgs = append(allArgs, args...)
+	for k, v := range dc.attributes {
+		allArgs = append(allArgs, k, v)
+	}
+	dc.mode.Debug(msg, allArgs...)
 }
 
 func (dc *DebugContext) Complete() {
