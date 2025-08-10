@@ -39,7 +39,7 @@ func New(opts ...Option) *Engine {
 }
 
 func (e *Engine) RenderDir(ctx Context, templateDir string, data any) error {
-	return e.renderer.RenderDir(ctx, templateDir, data)
+	return e.renderer.RenderDir(ctx, e.failMode, templateDir, data)
 }
 
 func (e *Engine) SetOutput(w io.Writer) {

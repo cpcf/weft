@@ -21,10 +21,16 @@ func NewRenderer(logger *slog.Logger, cache *TemplateCache) *Renderer {
 	}
 }
 
-func (r *Renderer) RenderDir(ctx Context, templateDir string, data any) error {
-	return fs.WalkDir(ctx.TmplFS, templateDir, func(path string, d fs.DirEntry, err error) error {
+func (r *Renderer) RenderDir(ctx Context, failMode FailureMode, templateDir string, data any) error {
+	var multiErr MultiError
+	
+	err := fs.WalkDir(ctx.TmplFS, templateDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
-			return err
+			if failMode == FailFast {
+				return err
+			}
+			multiErr.Add(path, "filesystem error", err)
+			return nil
 		}
 
 		if d.IsDir() {
@@ -35,8 +41,24 @@ func (r *Renderer) RenderDir(ctx Context, templateDir string, data any) error {
 			return nil
 		}
 
-		return r.renderFile(ctx, path, data)
+		if renderErr := r.renderFile(ctx, path, data); renderErr != nil {
+			if failMode == FailFast {
+				return renderErr
+			}
+			multiErr.Add(path, "render failed", renderErr)
+		}
+		return nil
 	})
+	
+	if err != nil {
+		return err
+	}
+	
+	if multiErr.HasErrors() && failMode != BestEffort {
+		return &multiErr
+	}
+	
+	return nil
 }
 
 func (r *Renderer) renderFile(ctx Context, templatePath string, data any) error {
@@ -56,7 +78,11 @@ func (r *Renderer) renderFile(ctx Context, templatePath string, data any) error 
 	if err != nil {
 		return fmt.Errorf("failed to create output file %s: %w", outputPath, err)
 	}
-	defer file.Close()
+	defer func() {
+		if closeErr := file.Close(); closeErr != nil {
+			r.logger.Warn("failed to close file", "path", outputPath, "error", closeErr)
+		}
+	}()
 
 	if err := tmpl.Execute(file, data); err != nil {
 		return fmt.Errorf("failed to execute template %s: %w", templatePath, err)

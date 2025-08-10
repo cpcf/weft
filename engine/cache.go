@@ -4,22 +4,33 @@ import (
 	"io/fs"
 	"sync"
 	"text/template"
+	"unsafe"
 )
+
+type cacheKey struct {
+	fsID uintptr
+	path string
+}
 
 type TemplateCache struct {
 	mu        sync.RWMutex
-	templates map[string]*template.Template
+	templates map[cacheKey]*template.Template
 }
 
 func NewTemplateCache() *TemplateCache {
 	return &TemplateCache{
-		templates: make(map[string]*template.Template),
+		templates: make(map[cacheKey]*template.Template),
 	}
 }
 
 func (c *TemplateCache) Get(fsys fs.FS, path string) (*template.Template, error) {
+	key := cacheKey{
+		fsID: uintptr(unsafe.Pointer(&fsys)),
+		path: path,
+	}
+	
 	c.mu.RLock()
-	if tmpl, exists := c.templates[path]; exists {
+	if tmpl, exists := c.templates[key]; exists {
 		c.mu.RUnlock()
 		return tmpl, nil
 	}
@@ -28,7 +39,7 @@ func (c *TemplateCache) Get(fsys fs.FS, path string) (*template.Template, error)
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	if tmpl, exists := c.templates[path]; exists {
+	if tmpl, exists := c.templates[key]; exists {
 		return tmpl, nil
 	}
 
@@ -42,12 +53,12 @@ func (c *TemplateCache) Get(fsys fs.FS, path string) (*template.Template, error)
 		return nil, err
 	}
 
-	c.templates[path] = tmpl
+	c.templates[key] = tmpl
 	return tmpl, nil
 }
 
 func (c *TemplateCache) Clear() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.templates = make(map[string]*template.Template)
+	c.templates = make(map[cacheKey]*template.Template)
 }
