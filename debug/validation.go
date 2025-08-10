@@ -48,12 +48,12 @@ func isSecurePath(path string) bool {
 	if strings.Contains(path, "..") {
 		return false
 	}
-	
+
 	// Check for absolute paths that might escape the template directory
 	if filepath.IsAbs(path) {
 		return false
 	}
-	
+
 	// Check for dangerous patterns
 	dangerousPatterns := []string{
 		"//", "\\\\", // Double slashes
@@ -61,13 +61,13 @@ func isSecurePath(path string) bool {
 		"C:\\", "D:\\", // Windows drive letters
 		"~", // Home directory reference
 	}
-	
+
 	for _, pattern := range dangerousPatterns {
 		if strings.Contains(path, pattern) {
 			return false
 		}
 	}
-	
+
 	return true
 }
 
@@ -91,6 +91,16 @@ func (tv *TemplateValidator) ValidateTemplate(templatePath string) ValidationRes
 			Message:    "Template path contains unsafe characters or path traversal patterns",
 			File:       templatePath,
 			Suggestion: "Use relative paths without '..' or absolute path references",
+		})
+		return result
+	}
+
+	if tv.fs == nil {
+		result.Valid = false
+		result.Errors = append(result.Errors, ValidationError{
+			Type:    "filesystem_error",
+			Message: "Template filesystem is not initialized",
+			File:    templatePath,
 		})
 		return result
 	}
