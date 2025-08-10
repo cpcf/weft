@@ -10,20 +10,20 @@ import (
 )
 
 type FileLockManager struct {
-	locks    map[string]*FileLock
-	mu       sync.RWMutex
-	timeout  time.Duration
+	locks           map[string]*FileLock
+	mu              sync.RWMutex
+	timeout         time.Duration
 	cleanupInterval time.Duration
-	stopChan chan struct{}
+	stopChan        chan struct{}
 }
 
 type FileLock struct {
-	Path      string
-	Acquired  time.Time
-	Owner     string
-	mu        sync.Mutex
-	lockFile  *os.File
-	refs      int
+	Path     string
+	Acquired time.Time
+	Owner    string
+	mu       sync.Mutex
+	lockFile *os.File
+	refs     int
 }
 
 type LockOption func(*FileLockManager)
@@ -104,11 +104,11 @@ func (flm *FileLockManager) AcquireLockWithContext(ctx context.Context, path, ow
 }
 
 func (flm *FileLockManager) tryAcquire(absPath, lockPath, owner string) (*FileLock, error) {
-	if err := os.MkdirAll(filepath.Dir(lockPath), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(lockPath), 0o755); err != nil {
 		return nil, fmt.Errorf("failed to create lock directory: %w", err)
 	}
 
-	lockFile, err := os.OpenFile(lockPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0644)
+	lockFile, err := os.OpenFile(lockPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o644)
 	if err != nil {
 		if os.IsExist(err) {
 			return nil, fmt.Errorf("lock already exists")
@@ -158,7 +158,7 @@ func (flm *FileLockManager) ReleaseLock(lock *FileLock) error {
 	delete(flm.locks, lock.Path)
 
 	lockPath := lock.Path + ".lock"
-	
+
 	lock.lockFile.Close()
 	if err := os.Remove(lockPath); err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("failed to remove lock file: %w", err)
@@ -226,7 +226,7 @@ func (flm *FileLockManager) cleanupStaleLocks() {
 	for path, lock := range flm.locks {
 		if lock.Acquired.Before(staleThreshold) {
 			lockPath := path + ".lock"
-			
+
 			lock.lockFile.Close()
 			os.Remove(lockPath)
 			delete(flm.locks, path)
@@ -353,15 +353,15 @@ func (cwm *ConcurrentWriteManager) Stop() {
 
 func (cwm *ConcurrentWriteManager) GetStats() ConcurrentWriteStats {
 	activeLocks := cwm.lockManager.GetActiveLocks()
-	
+
 	cwm.mu.RLock()
 	writerCount := len(cwm.writers)
 	cwm.mu.RUnlock()
 
 	return ConcurrentWriteStats{
-		ActiveLocks:  len(activeLocks),
-		WriterCount:  writerCount,
-		LockDetails:  activeLocks,
+		ActiveLocks: len(activeLocks),
+		WriterCount: writerCount,
+		LockDetails: activeLocks,
 	}
 }
 

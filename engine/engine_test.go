@@ -96,7 +96,7 @@ func TestEngineFailureModes(t *testing.T) {
 		if err == nil {
 			t.Fatal("Expected error in FailAtEnd mode")
 		}
-		
+
 		multiErr, ok := err.(*MultiError)
 		if !ok {
 			t.Errorf("Expected MultiError, got %T", err)
@@ -111,7 +111,7 @@ func TestEngineFailureModes(t *testing.T) {
 		if err != nil {
 			t.Errorf("Expected no error in BestEffort mode, got: %v", err)
 		}
-		
+
 		// Check that the good template was rendered despite the bad one
 		goodPath := filepath.Join(tempDir, "templates", "good.go")
 		if _, err := os.Stat(goodPath); os.IsNotExist(err) {
@@ -122,36 +122,36 @@ func TestEngineFailureModes(t *testing.T) {
 
 func TestTemplateCacheKeyCollision(t *testing.T) {
 	cache := NewTemplateCache()
-	
+
 	memFS1 := gogentest.NewMemoryFS()
 	memFS1.WriteFile("test.tmpl", []byte("template1: {{.Value}}"))
-	
+
 	memFS2 := gogentest.NewMemoryFS()
 	memFS2.WriteFile("test.tmpl", []byte("template2: {{.Value}}"))
-	
+
 	// Get template from first filesystem
 	tmpl1, err := cache.Get(memFS1, "test.tmpl")
 	if err != nil {
 		t.Fatal(err)
 	}
-	
+
 	// Get template from second filesystem with same path
 	tmpl2, err := cache.Get(memFS2, "test.tmpl")
 	if err != nil {
 		t.Fatal(err)
 	}
-	
+
 	// They should be different templates (different cache entries)
 	var buf1, buf2 strings.Builder
 	data := map[string]any{"Value": "test"}
-	
+
 	if err := tmpl1.Execute(&buf1, data); err != nil {
 		t.Fatal(err)
 	}
 	if err := tmpl2.Execute(&buf2, data); err != nil {
 		t.Fatal(err)
 	}
-	
+
 	if buf1.String() == buf2.String() {
 		t.Error("Templates from different filesystems should be cached separately")
 	}

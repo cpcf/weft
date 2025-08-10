@@ -20,12 +20,12 @@ type ManifestEntry struct {
 }
 
 type Manifest struct {
-	Version     string                   `json:"version"`
-	Generated   time.Time                `json:"generated"`
-	Generator   string                   `json:"generator"`
-	OutputRoot  string                   `json:"output_root"`
-	Entries     map[string]ManifestEntry `json:"entries"`
-	Metadata    map[string]string        `json:"metadata,omitempty"`
+	Version    string                   `json:"version"`
+	Generated  time.Time                `json:"generated"`
+	Generator  string                   `json:"generator"`
+	OutputRoot string                   `json:"output_root"`
+	Entries    map[string]ManifestEntry `json:"entries"`
+	Metadata   map[string]string        `json:"metadata,omitempty"`
 }
 
 type ManifestManager struct {
@@ -60,7 +60,7 @@ func (mm *ManifestManager) LoadManifest() (*Manifest, error) {
 }
 
 func (mm *ManifestManager) SaveManifest(manifest *Manifest) error {
-	if err := os.MkdirAll(filepath.Dir(mm.manifestPath), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(mm.manifestPath), 0o755); err != nil {
 		return fmt.Errorf("failed to create manifest directory: %w", err)
 	}
 

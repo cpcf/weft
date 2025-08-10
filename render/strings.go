@@ -176,18 +176,18 @@ func pluralize(word string) string {
 	word = strings.ToLower(word)
 
 	irregularPlurals := map[string]string{
-		"person":    "people",
-		"man":       "men",
-		"woman":     "women",
-		"child":     "children",
-		"tooth":     "teeth",
-		"foot":      "feet",
-		"mouse":     "mice",
-		"goose":     "geese",
-		"ox":        "oxen",
-		"datum":     "data",
-		"medium":    "media",
-		"criterion": "criteria",
+		"person":     "people",
+		"man":        "men",
+		"woman":      "women",
+		"child":      "children",
+		"tooth":      "teeth",
+		"foot":       "feet",
+		"mouse":      "mice",
+		"goose":      "geese",
+		"ox":         "oxen",
+		"datum":      "data",
+		"medium":     "media",
+		"criterion":  "criteria",
 		"phenomenon": "phenomena",
 	}
 
@@ -195,9 +195,9 @@ func pluralize(word string) string {
 		return plural
 	}
 
-	if strings.HasSuffix(word, "s") || strings.HasSuffix(word, "x") || 
-	   strings.HasSuffix(word, "z") || strings.HasSuffix(word, "ch") || 
-	   strings.HasSuffix(word, "sh") {
+	if strings.HasSuffix(word, "s") || strings.HasSuffix(word, "x") ||
+		strings.HasSuffix(word, "z") || strings.HasSuffix(word, "ch") ||
+		strings.HasSuffix(word, "sh") {
 		return word + "es"
 	}
 
@@ -226,19 +226,19 @@ func singularize(word string) string {
 	word = strings.ToLower(word)
 
 	irregularSingulars := map[string]string{
-		"people":     "person",
-		"men":        "man",
-		"women":      "woman",
-		"children":   "child",
-		"teeth":      "tooth",
-		"feet":       "foot",
-		"mice":       "mouse",
-		"geese":      "goose",
-		"oxen":       "ox",
-		"data":       "datum",
-		"media":      "medium",
-		"criteria":   "criterion",
-		"phenomena":  "phenomenon",
+		"people":    "person",
+		"men":       "man",
+		"women":     "woman",
+		"children":  "child",
+		"teeth":     "tooth",
+		"feet":      "foot",
+		"mice":      "mouse",
+		"geese":     "goose",
+		"oxen":      "ox",
+		"data":      "datum",
+		"media":     "medium",
+		"criteria":  "criterion",
+		"phenomena": "phenomenon",
 	}
 
 	if singular, exists := irregularSingulars[word]; exists {
@@ -255,9 +255,9 @@ func singularize(word string) string {
 
 	if strings.HasSuffix(word, "es") && len(word) > 2 {
 		base := word[:len(word)-2]
-		if strings.HasSuffix(base, "s") || strings.HasSuffix(base, "x") || 
-		   strings.HasSuffix(base, "z") || strings.HasSuffix(base, "ch") || 
-		   strings.HasSuffix(base, "sh") {
+		if strings.HasSuffix(base, "s") || strings.HasSuffix(base, "x") ||
+			strings.HasSuffix(base, "z") || strings.HasSuffix(base, "ch") ||
+			strings.HasSuffix(base, "sh") {
 			return base
 		}
 	}
@@ -293,7 +293,7 @@ func indentLines(text string, indent int) string {
 
 	indentStr := strings.Repeat(" ", indent)
 	lines := strings.Split(text, "\n")
-	
+
 	for i, line := range lines {
 		if strings.TrimSpace(line) != "" {
 			lines[i] = indentStr + line
@@ -504,14 +504,14 @@ func pathIsAbs(path string) bool {
 
 func generatePassword(length int) string {
 	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*"
-	
+
 	rand.Seed(time.Now().UnixNano())
 	password := make([]byte, length)
-	
+
 	for i := range password {
 		password[i] = charset[rand.Intn(len(charset))]
 	}
-	
+
 	return string(password)
 }
 
@@ -522,14 +522,14 @@ func randomInt(min, max int) int {
 
 func randomString(length int) string {
 	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-	
+
 	rand.Seed(time.Now().UnixNano())
 	result := make([]byte, length)
-	
+
 	for i := range result {
 		result[i] = charset[rand.Intn(len(charset))]
 	}
-	
+
 	return string(result)
 }
 
@@ -549,7 +549,7 @@ func wrapText(text string, width int) string {
 
 	for _, word := range words {
 		wordLength := utf8.RuneCountInString(word)
-		
+
 		if lineLength > 0 && lineLength+wordLength+1 > width {
 			result.WriteString(currentLine.String())
 			result.WriteRune('\n')
@@ -627,17 +627,17 @@ func padStringRight(s string, width int) string {
 	return s + strings.Repeat(" ", width-length)
 }
 
-func parseSemver(version string) map[string]interface{} {
+func parseSemver(version string) map[string]any {
 	re := regexp.MustCompile(`^v?(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$`)
 	matches := re.FindStringSubmatch(version)
-	
+
 	if len(matches) < 4 {
-		return map[string]interface{}{
-			"major": 0,
-			"minor": 0,
-			"patch": 0,
+		return map[string]any{
+			"major":      0,
+			"minor":      0,
+			"patch":      0,
 			"prerelease": "",
-			"metadata": "",
+			"metadata":   "",
 		}
 	}
 
@@ -654,12 +654,12 @@ func parseSemver(version string) map[string]interface{} {
 		metadata = matches[5]
 	}
 
-	return map[string]interface{}{
-		"major": major,
-		"minor": minor,
-		"patch": patch,
+	return map[string]any{
+		"major":      major,
+		"minor":      minor,
+		"patch":      patch,
 		"prerelease": prerelease,
-		"metadata": metadata,
+		"metadata":   metadata,
 	}
 }
 

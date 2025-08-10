@@ -41,7 +41,7 @@ func NewVersionManager(outputRoot, backupDir string) *VersionManager {
 	if backupDir == "" {
 		backupDir = filepath.Join(outputRoot, ".gogenkit", "backups")
 	}
-	
+
 	return &VersionManager{
 		outputRoot: outputRoot,
 		backupDir:  backupDir,
@@ -136,12 +136,12 @@ func (vm *VersionManager) migrateFrom0_0(manifest *Manifest) error {
 
 func (vm *VersionManager) backupManifest() (string, error) {
 	manifestPath := filepath.Join(vm.outputRoot, ".gogenkit.manifest.json")
-	
+
 	if _, err := os.Stat(manifestPath); os.IsNotExist(err) {
 		return "", nil
 	}
 
-	if err := os.MkdirAll(vm.backupDir, 0755); err != nil {
+	if err := os.MkdirAll(vm.backupDir, 0o755); err != nil {
 		return "", fmt.Errorf("failed to create backup directory: %w", err)
 	}
 
@@ -180,7 +180,7 @@ func (vm *VersionManager) backupManifest() (string, error) {
 
 func (vm *VersionManager) GetVersionInfo() (*VersionInfo, error) {
 	manifestPath := filepath.Join(vm.outputRoot, ".gogenkit.manifest.json")
-	
+
 	if _, err := os.Stat(manifestPath); os.IsNotExist(err) {
 		return &VersionInfo{
 			Version:   "0.0",
@@ -195,7 +195,7 @@ func (vm *VersionManager) GetVersionInfo() (*VersionInfo, error) {
 	}
 	defer file.Close()
 
-	var manifest map[string]interface{}
+	var manifest map[string]any
 	if err := json.NewDecoder(file).Decode(&manifest); err != nil {
 		return nil, fmt.Errorf("failed to decode manifest: %w", err)
 	}
@@ -355,10 +355,7 @@ func CompareVersions(v1, v2 string) int {
 	parts1 := strings.Split(v1, ".")
 	parts2 := strings.Split(v2, ".")
 
-	maxLen := len(parts1)
-	if len(parts2) > maxLen {
-		maxLen = len(parts2)
-	}
+	maxLen := max(len(parts2), len(parts1))
 
 	for i := 0; i < maxLen; i++ {
 		var p1, p2 int

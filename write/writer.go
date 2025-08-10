@@ -20,8 +20,7 @@ type WriteOptions struct {
 	Atomic     bool
 }
 
-type BaseWriter struct {
-}
+type BaseWriter struct{}
 
 func NewBaseWriter() *BaseWriter {
 	return &BaseWriter{}
@@ -29,7 +28,7 @@ func NewBaseWriter() *BaseWriter {
 
 func (bw *BaseWriter) Write(path string, content []byte, options WriteOptions) error {
 	if options.CreateDirs {
-		if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 			return fmt.Errorf("failed to create directories: %w", err)
 		}
 	}
@@ -73,14 +72,14 @@ func (bw *BaseWriter) createBackup(path, backupDir string) error {
 	}
 
 	backupPath := filepath.Join(backupDir, filepath.Base(path)+".bak")
-	
+
 	input, err := os.Open(path)
 	if err != nil {
 		return err
 	}
 	defer input.Close()
 
-	if err := os.MkdirAll(backupDir, 0755); err != nil {
+	if err := os.MkdirAll(backupDir, 0o755); err != nil {
 		return err
 	}
 
@@ -109,7 +108,7 @@ func (bw *BaseWriter) createBackup(path, backupDir string) error {
 
 func (bw *BaseWriter) atomicWrite(path string, content []byte) error {
 	tempPath := path + ".tmp"
-	
+
 	file, err := os.Create(tempPath)
 	if err != nil {
 		return err
@@ -136,5 +135,5 @@ func (bw *BaseWriter) directWrite(path string, content []byte, overwrite bool) e
 		}
 	}
 
-	return os.WriteFile(path, content, 0644)
+	return os.WriteFile(path, content, 0o644)
 }

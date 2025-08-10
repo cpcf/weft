@@ -135,9 +135,9 @@ func TestNewDebugMode(t *testing.T) {
 
 func TestDebugMode_IsEnabled(t *testing.T) {
 	tests := []struct {
-		modeLevel DebugLevel
+		modeLevel  DebugLevel
 		checkLevel DebugLevel
-		expected bool
+		expected   bool
 	}{
 		{LevelOff, LevelError, false},
 		{LevelError, LevelError, true},
@@ -159,7 +159,7 @@ func TestDebugMode_IsEnabled(t *testing.T) {
 			result := dm.IsEnabled(test.checkLevel)
 
 			if result != test.expected {
-				t.Errorf("Expected IsEnabled(%v) = %v for mode level %v, got %v", 
+				t.Errorf("Expected IsEnabled(%v) = %v for mode level %v, got %v",
 					test.checkLevel, test.expected, test.modeLevel, result)
 			}
 		})
@@ -186,13 +186,13 @@ func TestDebugMode_SetLevel(t *testing.T) {
 
 func TestDebugMode_LoggingMethods(t *testing.T) {
 	tests := []struct {
-		name string
-		level DebugLevel
-		logFunc func(*DebugMode, *bytes.Buffer)
+		name         string
+		level        DebugLevel
+		logFunc      func(*DebugMode, *bytes.Buffer)
 		expectOutput bool
 	}{
 		{
-			name: "Error at Error level",
+			name:  "Error at Error level",
 			level: LevelError,
 			logFunc: func(dm *DebugMode, buf *bytes.Buffer) {
 				dm.Error("test error", "key", "value")
@@ -200,7 +200,7 @@ func TestDebugMode_LoggingMethods(t *testing.T) {
 			expectOutput: true,
 		},
 		{
-			name: "Error at Off level",
+			name:  "Error at Off level",
 			level: LevelOff,
 			logFunc: func(dm *DebugMode, buf *bytes.Buffer) {
 				dm.Error("test error", "key", "value")
@@ -208,7 +208,7 @@ func TestDebugMode_LoggingMethods(t *testing.T) {
 			expectOutput: false,
 		},
 		{
-			name: "Warn at Warn level",
+			name:  "Warn at Warn level",
 			level: LevelWarn,
 			logFunc: func(dm *DebugMode, buf *bytes.Buffer) {
 				dm.Warn("test warning", "key", "value")
@@ -216,7 +216,7 @@ func TestDebugMode_LoggingMethods(t *testing.T) {
 			expectOutput: true,
 		},
 		{
-			name: "Warn at Error level",
+			name:  "Warn at Error level",
 			level: LevelError,
 			logFunc: func(dm *DebugMode, buf *bytes.Buffer) {
 				dm.Warn("test warning", "key", "value")
@@ -224,7 +224,7 @@ func TestDebugMode_LoggingMethods(t *testing.T) {
 			expectOutput: false,
 		},
 		{
-			name: "Info at Info level",
+			name:  "Info at Info level",
 			level: LevelInfo,
 			logFunc: func(dm *DebugMode, buf *bytes.Buffer) {
 				dm.Info("test info", "key", "value")
@@ -232,7 +232,7 @@ func TestDebugMode_LoggingMethods(t *testing.T) {
 			expectOutput: true,
 		},
 		{
-			name: "Debug at Debug level",
+			name:  "Debug at Debug level",
 			level: LevelDebug,
 			logFunc: func(dm *DebugMode, buf *bytes.Buffer) {
 				dm.Debug("test debug", "key", "value")
@@ -240,7 +240,7 @@ func TestDebugMode_LoggingMethods(t *testing.T) {
 			expectOutput: true,
 		},
 		{
-			name: "Debug at Info level",
+			name:  "Debug at Info level",
 			level: LevelInfo,
 			logFunc: func(dm *DebugMode, buf *bytes.Buffer) {
 				dm.Debug("test debug", "key", "value")
@@ -248,7 +248,7 @@ func TestDebugMode_LoggingMethods(t *testing.T) {
 			expectOutput: false,
 		},
 		{
-			name: "Trace at Trace level",
+			name:  "Trace at Trace level",
 			level: LevelTrace,
 			logFunc: func(dm *DebugMode, buf *bytes.Buffer) {
 				dm.Trace("test trace", "key", "value")
@@ -256,7 +256,7 @@ func TestDebugMode_LoggingMethods(t *testing.T) {
 			expectOutput: true,
 		},
 		{
-			name: "Trace at Debug level",
+			name:  "Trace at Debug level",
 			level: LevelDebug,
 			logFunc: func(dm *DebugMode, buf *bytes.Buffer) {
 				dm.Trace("test trace", "key", "value")
@@ -293,7 +293,7 @@ func TestDebugMode_LogTemplateExecution(t *testing.T) {
 	dm := NewDebugMode(WithLevel(LevelDebug), WithOutput(&buf))
 
 	templatePath := "/path/to/template.tmpl"
-	data := map[string]interface{}{"key": "value"}
+	data := map[string]any{"key": "value"}
 	duration := 100 * time.Millisecond
 
 	dm.LogTemplateExecution(templatePath, data, duration)
@@ -315,7 +315,7 @@ func TestDebugMode_LogTemplateData(t *testing.T) {
 	dm := NewDebugMode(WithLevel(LevelTrace), WithOutput(&buf))
 
 	templatePath := "/path/to/template.tmpl"
-	data := map[string]interface{}{"key": "value", "number": 42}
+	data := map[string]any{"key": "value", "number": 42}
 
 	dm.LogTemplateData(templatePath, data)
 
@@ -645,11 +645,11 @@ func TestDebugMode_ConcurrentAccess(t *testing.T) {
 	numGoroutines := 10
 	operationsPerGoroutine := 20
 
-	for i := 0; i < numGoroutines; i++ {
+	for i := range numGoroutines {
 		wg.Add(1)
 		go func(id int) {
 			defer wg.Done()
-			for j := 0; j < operationsPerGoroutine; j++ {
+			for j := range operationsPerGoroutine {
 				dm.SetLevel(LevelDebug)
 				dm.Info("concurrent test", "goroutine", id, "operation", j)
 				dm.Debug("debug message", "goroutine", id, "operation", j)
@@ -675,11 +675,11 @@ func TestDebugContext_ConcurrentAccess(t *testing.T) {
 	numGoroutines := 10
 	operationsPerGoroutine := 20
 
-	for i := 0; i < numGoroutines; i++ {
+	for i := range numGoroutines {
 		wg.Add(1)
 		go func(id int) {
 			defer wg.Done()
-			for j := 0; j < operationsPerGoroutine; j++ {
+			for j := range operationsPerGoroutine {
 				key := fmt.Sprintf("key_%d_%d", id, j)
 				value := fmt.Sprintf("value_%d_%d", id, j)
 				ctx.SetAttribute(key, value)

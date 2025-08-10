@@ -82,38 +82,38 @@ func TestTemplateValidator_ValidateTemplate_FileErrors(t *testing.T) {
 
 func TestTemplateValidator_ValidateSyntax(t *testing.T) {
 	tests := []struct {
-		name     string
-		content  string
+		name      string
+		content   string
 		wantValid bool
 		errorType string
 		errorMsg  string
 	}{
 		{
-			name:     "valid template",
-			content:  "Hello {{.Name}}!",
+			name:      "valid template",
+			content:   "Hello {{.Name}}!",
 			wantValid: true,
 		},
 		{
-			name:     "syntax error - unclosed brace",
-			content:  "Hello {{.Name!",
+			name:      "syntax error - unclosed brace",
+			content:   "Hello {{.Name!",
 			wantValid: false,
 			errorType: "syntax_error",
 		},
 		{
-			name:     "syntax error - invalid function",
-			content:  "Hello {{badfunction}}!",
+			name:      "syntax error - invalid function",
+			content:   "Hello {{badfunction}}!",
 			wantValid: false,
 			errorType: "syntax_error",
 		},
 		{
-			name:     "brace mismatch - extra closing",
-			content:  "Hello {{.Name}}}}!",
+			name:      "brace mismatch - extra closing",
+			content:   "Hello {{.Name}}}}!",
 			wantValid: false,
 			errorType: "brace_mismatch",
 		},
 		{
-			name:     "brace mismatch - extra opening",
-			content:  "Hello {{{{.Name}}!",
+			name:      "brace mismatch - extra opening",
+			content:   "Hello {{{{.Name}}!",
 			wantValid: false,
 			errorType: "brace_mismatch",
 		},
@@ -261,13 +261,13 @@ func TestTemplateValidator_ValidateWhitespace(t *testing.T) {
 
 func TestTemplateValidator_ValidateFunctions(t *testing.T) {
 	funcMap := template.FuncMap{
-		"upper":   strings.ToUpper,
+		"upper":  strings.ToUpper,
 		"myFunc": func() string { return "test" },
 	}
 
 	tests := []struct {
-		name           string
-		content        string
+		name             string
+		content          string
 		expectedWarnings int
 		expectedFuncName string
 	}{
@@ -403,10 +403,10 @@ func TestTemplateValidator_ValidatePartials(t *testing.T) {
 	}
 
 	tests := []struct {
-		name           string
-		templatePath   string
-		expectErrors   int
-		expectValid    bool
+		name         string
+		templatePath string
+		expectErrors int
+		expectValid  bool
 	}{
 		{
 			name:         "existing partials",
@@ -449,7 +449,7 @@ func TestTemplateValidator_ValidateIncludes(t *testing.T) {
 	funcMap := template.FuncMap{
 		"include": func(string) string { return "" }, // dummy include function for validation
 	}
-	
+
 	testFS := fstest.MapFS{
 		"main.tmpl": &fstest.MapFile{
 			Data: []byte(`{{include "existing.tmpl"}} {{include "nonexistent.tmpl"}}`),
@@ -466,10 +466,10 @@ func TestTemplateValidator_ValidateIncludes(t *testing.T) {
 	}
 
 	tests := []struct {
-		name           string
-		templatePath   string
-		expectErrors   int
-		expectValid    bool
+		name         string
+		templatePath string
+		expectErrors int
+		expectValid  bool
 	}{
 		{
 			name:         "mixed includes",
@@ -510,10 +510,10 @@ func TestTemplateValidator_ValidateIncludes(t *testing.T) {
 
 func TestTemplateValidator_ResolvePartialPath(t *testing.T) {
 	testFS := fstest.MapFS{
-		"templates/_header.tmpl":     &fstest.MapFile{Data: []byte("header")},
-		"templates/_footer.tpl":      &fstest.MapFile{Data: []byte("footer")},
-		"_global.tmpl":               &fstest.MapFile{Data: []byte("global")},
-		"_global.tpl":                &fstest.MapFile{Data: []byte("global2")},
+		"templates/_header.tmpl": &fstest.MapFile{Data: []byte("header")},
+		"templates/_footer.tpl":  &fstest.MapFile{Data: []byte("footer")},
+		"_global.tmpl":           &fstest.MapFile{Data: []byte("global")},
+		"_global.tpl":            &fstest.MapFile{Data: []byte("global2")},
 	}
 
 	validator := NewTemplateValidator(testFS, nil, nil)
@@ -557,10 +557,10 @@ func TestTemplateValidator_ResolvePartialPath(t *testing.T) {
 
 func TestTemplateValidator_ResolveIncludePath(t *testing.T) {
 	testFS := fstest.MapFS{
-		"shared.tmpl":           &fstest.MapFile{Data: []byte("shared")},
-		"templates/local.tmpl":  &fstest.MapFile{Data: []byte("local")},
-		"includes/common.tmpl":  &fstest.MapFile{Data: []byte("common")},
-		"templates/nested.tpl":  &fstest.MapFile{Data: []byte("nested")},
+		"shared.tmpl":          &fstest.MapFile{Data: []byte("shared")},
+		"templates/local.tmpl": &fstest.MapFile{Data: []byte("local")},
+		"includes/common.tmpl": &fstest.MapFile{Data: []byte("common")},
+		"templates/nested.tpl": &fstest.MapFile{Data: []byte("nested")},
 	}
 
 	validator := NewTemplateValidator(testFS, nil, nil)
@@ -812,7 +812,7 @@ func TestTemplateValidator_ValidateDirectory(t *testing.T) {
 func TestTemplateValidator_ValidateDirectory_WithError(t *testing.T) {
 	// Create a filesystem that will cause WalkDir to fail
 	testFS := &errorFS{}
-	
+
 	var buf strings.Builder
 	dm := NewDebugMode(WithLevel(LevelDebug), WithOutput(&buf))
 	validator := NewTemplateValidator(testFS, nil, dm)

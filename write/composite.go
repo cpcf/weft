@@ -238,9 +238,9 @@ func (cw *ConditionalWriter) NeedsWrite(path string, content []byte) (bool, erro
 }
 
 type RetryWriter struct {
-	writer   Writer
+	writer     Writer
 	maxRetries int
-	backoff  func(int) time.Duration
+	backoff    func(int) time.Duration
 }
 
 func NewRetryWriter(writer Writer, maxRetries int) *RetryWriter {
@@ -259,20 +259,20 @@ func (rw *RetryWriter) SetBackoff(backoff func(int) time.Duration) {
 
 func (rw *RetryWriter) Write(path string, content []byte, options WriteOptions) error {
 	var lastErr error
-	
+
 	for attempt := 0; attempt <= rw.maxRetries; attempt++ {
 		if attempt > 0 {
 			time.Sleep(rw.backoff(attempt))
 		}
-		
+
 		if err := rw.writer.Write(path, content, options); err != nil {
 			lastErr = err
 			continue
 		}
-		
+
 		return nil
 	}
-	
+
 	return fmt.Errorf("failed after %d attempts: %w", rw.maxRetries+1, lastErr)
 }
 
@@ -300,7 +300,7 @@ func (vw *ValidatingWriter) Write(path string, content []byte, options WriteOpti
 	if err := vw.validator(path, content); err != nil {
 		return fmt.Errorf("validation failed: %w", err)
 	}
-	
+
 	return vw.writer.Write(path, content, options)
 }
 

@@ -26,8 +26,8 @@ func CreateDebugFuncMap(debugMode *DebugMode) template.FuncMap {
 	}
 }
 
-func debugValue(debugMode *DebugMode) func(interface{}) string {
-	return func(value interface{}) string {
+func debugValue(debugMode *DebugMode) func(any) string {
+	return func(value any) string {
 		if !debugMode.IsEnabled(LevelDebug) {
 			return ""
 		}
@@ -41,7 +41,7 @@ func debugValue(debugMode *DebugMode) func(interface{}) string {
 	}
 }
 
-type valueFormatter func(reflect.Value, interface{}, *DebugMode) string
+type valueFormatter func(reflect.Value, any, *DebugMode) string
 
 var intKinds = map[reflect.Kind]bool{
 	reflect.Int: true, reflect.Int8: true, reflect.Int16: true,
@@ -59,25 +59,25 @@ var floatKinds = map[reflect.Kind]bool{
 
 func getTypeFormatters() map[reflect.Kind]valueFormatter {
 	return map[reflect.Kind]valueFormatter{
-		reflect.String:  formatStringValueWithContext,
-		reflect.Bool:    formatBoolValueWithContext,
-		reflect.Slice:   formatSliceArrayValueWithContext,
-		reflect.Array:   formatSliceArrayValueWithContext,
-		reflect.Map:     formatMapValueWithContext,
-		reflect.Struct:  formatStructValueWithContext,
-		reflect.Ptr:     formatPtrValueWithContext,
+		reflect.String: formatStringValueWithContext,
+		reflect.Bool:   formatBoolValueWithContext,
+		reflect.Slice:  formatSliceArrayValueWithContext,
+		reflect.Array:  formatSliceArrayValueWithContext,
+		reflect.Map:    formatMapValueWithContext,
+		reflect.Struct: formatStructValueWithContext,
+		reflect.Ptr:    formatPtrValueWithContext,
 	}
 }
 
-func formatValueByKind(v reflect.Value, value interface{}, debugMode *DebugMode) string {
+func formatValueByKind(v reflect.Value, value any, debugMode *DebugMode) string {
 	kind := v.Kind()
-	
+
 	// Check specific type formatters first
 	typeFormatters := getTypeFormatters()
 	if formatter, exists := typeFormatters[kind]; exists {
 		return formatter(v, value, debugMode)
 	}
-	
+
 	// Handle numeric types with maps for better performance
 	if intKinds[kind] {
 		return formatIntValue(v)
@@ -88,7 +88,7 @@ func formatValueByKind(v reflect.Value, value interface{}, debugMode *DebugMode)
 	if floatKinds[kind] {
 		return formatFloatValue(v)
 	}
-	
+
 	return formatDefaultValue(v, value)
 }
 
@@ -112,15 +112,15 @@ func formatBoolValue(v reflect.Value) string {
 	return fmt.Sprintf("bool: %t", v.Bool())
 }
 
-func formatSliceArrayValue(v reflect.Value, value interface{}) string {
+func formatSliceArrayValue(v reflect.Value, value any) string {
 	return fmt.Sprintf("%s[%d]: %v", v.Type(), v.Len(), value)
 }
 
-func formatMapValue(v reflect.Value, value interface{}) string {
+func formatMapValue(v reflect.Value, value any) string {
 	return fmt.Sprintf("%s{%d keys}: %v", v.Type(), v.Len(), value)
 }
 
-func formatStructValue(v reflect.Value, value interface{}) string {
+func formatStructValue(v reflect.Value, value any) string {
 	return fmt.Sprintf("%s: %+v", v.Type(), value)
 }
 
@@ -132,36 +132,36 @@ func formatPtrValue(v reflect.Value, debugMode *DebugMode) string {
 }
 
 // Context-aware formatters that match the valueFormatter signature
-func formatStringValueWithContext(v reflect.Value, value interface{}, debugMode *DebugMode) string {
+func formatStringValueWithContext(v reflect.Value, value any, debugMode *DebugMode) string {
 	return formatStringValue(v)
 }
 
-func formatBoolValueWithContext(v reflect.Value, value interface{}, debugMode *DebugMode) string {
+func formatBoolValueWithContext(v reflect.Value, value any, debugMode *DebugMode) string {
 	return formatBoolValue(v)
 }
 
-func formatSliceArrayValueWithContext(v reflect.Value, value interface{}, debugMode *DebugMode) string {
+func formatSliceArrayValueWithContext(v reflect.Value, value any, debugMode *DebugMode) string {
 	return formatSliceArrayValue(v, value)
 }
 
-func formatMapValueWithContext(v reflect.Value, value interface{}, debugMode *DebugMode) string {
+func formatMapValueWithContext(v reflect.Value, value any, debugMode *DebugMode) string {
 	return formatMapValue(v, value)
 }
 
-func formatStructValueWithContext(v reflect.Value, value interface{}, debugMode *DebugMode) string {
+func formatStructValueWithContext(v reflect.Value, value any, debugMode *DebugMode) string {
 	return formatStructValue(v, value)
 }
 
-func formatPtrValueWithContext(v reflect.Value, value interface{}, debugMode *DebugMode) string {
+func formatPtrValueWithContext(v reflect.Value, value any, debugMode *DebugMode) string {
 	return formatPtrValue(v, debugMode)
 }
 
-func formatDefaultValue(v reflect.Value, value interface{}) string {
+func formatDefaultValue(v reflect.Value, value any) string {
 	return fmt.Sprintf("%s: %v", v.Type(), value)
 }
 
-func debugType(debugMode *DebugMode) func(interface{}) string {
-	return func(value interface{}) string {
+func debugType(debugMode *DebugMode) func(any) string {
+	return func(value any) string {
 		if !debugMode.IsEnabled(LevelDebug) {
 			return ""
 		}
@@ -188,8 +188,8 @@ func debugType(debugMode *DebugMode) func(interface{}) string {
 	}
 }
 
-func debugKeys(debugMode *DebugMode) func(interface{}) []string {
-	return func(value interface{}) []string {
+func debugKeys(debugMode *DebugMode) func(any) []string {
+	return func(value any) []string {
 		if !debugMode.IsEnabled(LevelDebug) {
 			return nil
 		}
@@ -224,8 +224,8 @@ func debugKeys(debugMode *DebugMode) func(interface{}) []string {
 	}
 }
 
-func debugSize(debugMode *DebugMode) func(interface{}) int {
-	return func(value interface{}) int {
+func debugSize(debugMode *DebugMode) func(any) int {
+	return func(value any) int {
 		if !debugMode.IsEnabled(LevelDebug) {
 			return 0
 		}
@@ -246,8 +246,8 @@ func debugSize(debugMode *DebugMode) func(interface{}) int {
 	}
 }
 
-func debugJSON(debugMode *DebugMode) func(interface{}) string {
-	return func(value interface{}) string {
+func debugJSON(debugMode *DebugMode) func(any) string {
+	return func(value any) string {
 		if !debugMode.IsEnabled(LevelDebug) {
 			return ""
 		}
@@ -265,8 +265,8 @@ func debugJSON(debugMode *DebugMode) func(interface{}) string {
 	}
 }
 
-func debugPretty(debugMode *DebugMode) func(interface{}) string {
-	return func(value interface{}) string {
+func debugPretty(debugMode *DebugMode) func(any) string {
+	return func(value any) string {
 		if !debugMode.IsEnabled(LevelDebug) {
 			return ""
 		}
@@ -284,8 +284,8 @@ func debugPretty(debugMode *DebugMode) func(interface{}) string {
 	}
 }
 
-func debugLog(debugMode *DebugMode) func(string, ...interface{}) string {
-	return func(message string, args ...interface{}) string {
+func debugLog(debugMode *DebugMode) func(string, ...any) string {
+	return func(message string, args ...any) string {
 		if !debugMode.IsEnabled(LevelDebug) {
 			return ""
 		}
@@ -316,38 +316,38 @@ func debugStack(debugMode *DebugMode) func() string {
 	}
 }
 
-func debugContext(debugMode *DebugMode) func() map[string]interface{} {
-	return func() map[string]interface{} {
+func debugContext(debugMode *DebugMode) func() map[string]any {
+	return func() map[string]any {
 		if !debugMode.IsEnabled(LevelDebug) {
 			return nil
 		}
 
 		stats := debugMode.GetStats()
-		return map[string]interface{}{
-			"debug_level":   stats.Level.String(),
-			"uptime":        stats.Uptime.String(),
-			"start_time":    stats.StartTime.Format(time.RFC3339),
-			"profiling":     stats.ProfilingEnabled,
-			"tracing":       stats.TracingEnabled,
-			"metrics":       stats.MetricsEnabled,
+		return map[string]any{
+			"debug_level": stats.Level.String(),
+			"uptime":      stats.Uptime.String(),
+			"start_time":  stats.StartTime.Format(time.RFC3339),
+			"profiling":   stats.ProfilingEnabled,
+			"tracing":     stats.TracingEnabled,
+			"metrics":     stats.MetricsEnabled,
 		}
 	}
 }
 
 type TemplateDebugger struct {
-	debugMode *DebugMode
-	templates map[string]*template.Template
+	debugMode  *DebugMode
+	templates  map[string]*template.Template
 	executions []TemplateExecution
-	mu        sync.RWMutex
+	mu         sync.RWMutex
 }
 
 type TemplateExecution struct {
-	Name      string                 `json:"name"`
-	StartTime time.Time              `json:"start_time"`
-	Duration  time.Duration          `json:"duration"`
-	Data      map[string]interface{} `json:"data"`
-	Error     string                 `json:"error,omitempty"`
-	Output    string                 `json:"output,omitempty"`
+	Name      string         `json:"name"`
+	StartTime time.Time      `json:"start_time"`
+	Duration  time.Duration  `json:"duration"`
+	Data      map[string]any `json:"data"`
+	Error     string         `json:"error,omitempty"`
+	Output    string         `json:"output,omitempty"`
 }
 
 func NewTemplateDebugger(debugMode *DebugMode) *TemplateDebugger {
@@ -364,20 +364,20 @@ func (td *TemplateDebugger) RegisterTemplate(name string, tmpl *template.Templat
 	td.templates[name] = tmpl
 }
 
-func (td *TemplateDebugger) ExecuteWithDebug(name string, tmpl *template.Template, data interface{}) (string, error) {
+func (td *TemplateDebugger) ExecuteWithDebug(name string, tmpl *template.Template, data any) (string, error) {
 	startTime := time.Now()
-	
+
 	execution := TemplateExecution{
 		Name:      name,
 		StartTime: startTime,
 	}
 
 	if td.debugMode.IsEnabled(LevelTrace) {
-		if dataMap, ok := data.(map[string]interface{}); ok {
+		if dataMap, ok := data.(map[string]any); ok {
 			execution.Data = dataMap
 		} else {
 			dataJSON, _ := json.Marshal(data)
-			var dataMap map[string]interface{}
+			var dataMap map[string]any
 			json.Unmarshal(dataJSON, &dataMap)
 			execution.Data = dataMap
 		}
@@ -385,7 +385,7 @@ func (td *TemplateDebugger) ExecuteWithDebug(name string, tmpl *template.Templat
 
 	var output strings.Builder
 	err := tmpl.Execute(&output, data)
-	
+
 	execution.Duration = time.Since(startTime)
 	execution.Output = output.String()
 
@@ -415,18 +415,18 @@ func (td *TemplateDebugger) ExecuteWithDebug(name string, tmpl *template.Templat
 func (td *TemplateDebugger) GetExecutions() []TemplateExecution {
 	td.mu.RLock()
 	defer td.mu.RUnlock()
-	
+
 	executions := make([]TemplateExecution, len(td.executions))
 	copy(executions, td.executions)
 	return executions
 }
 
-func (td *TemplateDebugger) GetExecutionStats() map[string]interface{} {
+func (td *TemplateDebugger) GetExecutionStats() map[string]any {
 	td.mu.RLock()
 	defer td.mu.RUnlock()
 
 	if len(td.executions) == 0 {
-		return map[string]interface{}{
+		return map[string]any{
 			"total_executions": 0,
 		}
 	}
@@ -438,7 +438,7 @@ func (td *TemplateDebugger) GetExecutionStats() map[string]interface{} {
 	for _, exec := range td.executions {
 		totalDuration += exec.Duration
 		templateStats[exec.Name]++
-		
+
 		if exec.Error != "" {
 			errorCount++
 		} else {
@@ -448,7 +448,7 @@ func (td *TemplateDebugger) GetExecutionStats() map[string]interface{} {
 
 	avgDuration := totalDuration / time.Duration(len(td.executions))
 
-	return map[string]interface{}{
+	return map[string]any{
 		"total_executions": len(td.executions),
 		"success_count":    successCount,
 		"error_count":      errorCount,

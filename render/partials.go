@@ -25,7 +25,7 @@ func NewPartialManager(templateFS fs.FS, funcMap template.FuncMap) *PartialManag
 
 func (pm *PartialManager) LoadPartials(rootTemplate *template.Template, templatePath string) error {
 	dir := filepath.Dir(templatePath)
-	
+
 	err := fs.WalkDir(pm.templateFS, dir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -57,7 +57,7 @@ func (pm *PartialManager) loadPartialFile(rootTemplate *template.Template, parti
 	}
 
 	partialName := pm.getPartialName(partialPath)
-	
+
 	_, err = rootTemplate.New(partialName).Parse(string(content))
 	if err != nil {
 		return fmt.Errorf("failed to parse partial %s: %w", partialPath, err)
@@ -68,12 +68,12 @@ func (pm *PartialManager) loadPartialFile(rootTemplate *template.Template, parti
 
 func (pm *PartialManager) getPartialName(partialPath string) string {
 	base := filepath.Base(partialPath)
-	
+
 	base = strings.TrimPrefix(base, "_")
-	
+
 	ext := filepath.Ext(base)
 	base = strings.TrimSuffix(base, ext)
-	
+
 	return base
 }
 
@@ -88,7 +88,7 @@ func (pm *PartialManager) RegisterPartials(rootTemplate *template.Template, part
 
 func (pm *PartialManager) FindPartials(templateDir string) ([]string, error) {
 	var partials []string
-	
+
 	err := fs.WalkDir(pm.templateFS, templateDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -110,7 +110,7 @@ func (pm *PartialManager) FindPartials(templateDir string) ([]string, error) {
 
 func (pm *PartialManager) CreateTemplate(name string, content string) (*template.Template, error) {
 	tmpl := template.New(name).Funcs(pm.funcMap)
-	
+
 	parsed, err := tmpl.Parse(content)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse template %s: %w", name, err)
@@ -155,8 +155,13 @@ func (pm *PartialManager) ValidatePartials(templatePath string) error {
 		return err
 	}
 
-	partialNames := pm.extractPartialReferences(string(tmpl.Root.Tree.Root))
-	
+	content, err := fs.ReadFile(pm.templateFS, templatePath)
+	if err != nil {
+		return fmt.Errorf("failed to read template file %s: %w", templatePath, err)
+	}
+
+	partialNames := pm.extractPartialReferences(string(content))
+
 	for _, partialName := range partialNames {
 		if tmpl.Lookup(partialName) == nil {
 			return fmt.Errorf("partial template '%s' not found", partialName)
@@ -168,11 +173,11 @@ func (pm *PartialManager) ValidatePartials(templatePath string) error {
 
 func (pm *PartialManager) extractPartialReferences(content string) []string {
 	var partials []string
-	
-	lines := strings.Split(content, "\n")
-	for _, line := range lines {
+
+	lines := strings.SplitSeq(content, "\n")
+	for line := range lines {
 		line = strings.TrimSpace(line)
-		
+
 		if strings.Contains(line, "template") {
 			if start := strings.Index(line, `"`); start != -1 {
 				if end := strings.Index(line[start+1:], `"`); end != -1 {
@@ -188,13 +193,13 @@ func (pm *PartialManager) extractPartialReferences(content string) []string {
 
 func (pm *PartialManager) ListTemplateNames(rootTemplate *template.Template) []string {
 	var names []string
-	
+
 	if rootTemplate != nil {
 		for _, tmpl := range rootTemplate.Templates() {
 			names = append(names, tmpl.Name())
 		}
 	}
-	
+
 	return names
 }
 
@@ -222,7 +227,7 @@ func (pm *PartialManager) GetPartialContent(partialName string) (string, error) 
 
 func (pm *PartialManager) ResolvePartialPath(basePath, partialName string) string {
 	baseDir := filepath.Dir(basePath)
-	
+
 	candidates := []string{
 		path.Join(baseDir, "_"+partialName+".tmpl"),
 		path.Join(baseDir, "_"+partialName+".tpl"),

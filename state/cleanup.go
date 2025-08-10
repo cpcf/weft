@@ -63,23 +63,23 @@ type OrphanFile struct {
 }
 
 type CleanupResult struct {
-	Action      CleanupAction `json:"action"`
-	File        OrphanFile    `json:"file"`
-	Success     bool          `json:"success"`
-	Error       string        `json:"error,omitempty"`
-	BackupPath  string        `json:"backup_path,omitempty"`
+	Action     CleanupAction `json:"action"`
+	File       OrphanFile    `json:"file"`
+	Success    bool          `json:"success"`
+	Error      string        `json:"error,omitempty"`
+	BackupPath string        `json:"backup_path,omitempty"`
 }
 
 type CleanupSummary struct {
-	Mode            CleanupMode     `json:"mode"`
-	OrphansFound    int             `json:"orphans_found"`
-	FilesDeleted    int             `json:"files_deleted"`
-	FilesSkipped    int             `json:"files_skipped"`
-	FilesBackedUp   int             `json:"files_backed_up"`
-	Errors          int             `json:"errors"`
-	Results         []CleanupResult `json:"results"`
-	TotalSizeFreed  int64           `json:"total_size_freed"`
-	ExecutionTime   time.Duration   `json:"execution_time"`
+	Mode           CleanupMode     `json:"mode"`
+	OrphansFound   int             `json:"orphans_found"`
+	FilesDeleted   int             `json:"files_deleted"`
+	FilesSkipped   int             `json:"files_skipped"`
+	FilesBackedUp  int             `json:"files_backed_up"`
+	Errors         int             `json:"errors"`
+	Results        []CleanupResult `json:"results"`
+	TotalSizeFreed int64           `json:"total_size_freed"`
+	ExecutionTime  time.Duration   `json:"execution_time"`
 }
 
 type CleanupManager struct {
@@ -257,7 +257,7 @@ func (cm *CleanupManager) backupFile(path string) (string, error) {
 		return "", fmt.Errorf("backup directory not configured")
 	}
 
-	if err := os.MkdirAll(cm.backupDir, 0755); err != nil {
+	if err := os.MkdirAll(cm.backupDir, 0o755); err != nil {
 		return "", fmt.Errorf("failed to create backup directory: %w", err)
 	}
 
