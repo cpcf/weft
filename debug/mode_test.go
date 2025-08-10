@@ -744,8 +744,8 @@ func TestDebugMode_SetupLoggerLevelMapping(t *testing.T) {
 
 			if test.debugLevel >= LevelDebug {
 				output := buf.String()
-				if !strings.Contains(output, "debug/mode_test.go") {
-					t.Error("Expected source information to be included at debug level and above")
+				if !strings.Contains(output, "debug/mode.go") {
+					t.Errorf("Expected source information to be included at debug level and above. Got output: %q", output)
 				}
 			}
 		})
