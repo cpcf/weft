@@ -173,7 +173,10 @@ func TestDebugMode_SetLevel(t *testing.T) {
 		t.Error("Expected initial level to be Info")
 	}
 
-	dm.SetLevel(LevelDebug)
+	err := dm.SetLevel(LevelDebug)
+	if err != nil {
+		t.Fatalf("Unexpected error setting valid level: %v", err)
+	}
 
 	if dm.level != LevelDebug {
 		t.Errorf("Expected level to be %v after SetLevel, got %v", LevelDebug, dm.level)
@@ -181,6 +184,17 @@ func TestDebugMode_SetLevel(t *testing.T) {
 
 	if !dm.IsEnabled(LevelDebug) {
 		t.Error("Expected debug level to be enabled after SetLevel")
+	}
+
+	// Test invalid level
+	err = dm.SetLevel(DebugLevel(-1))
+	if err == nil {
+		t.Error("Expected error when setting invalid level")
+	}
+
+	err = dm.SetLevel(DebugLevel(999))
+	if err == nil {
+		t.Error("Expected error when setting invalid level")
 	}
 }
 
@@ -650,7 +664,7 @@ func TestDebugMode_ConcurrentAccess(t *testing.T) {
 		go func(id int) {
 			defer wg.Done()
 			for j := range operationsPerGoroutine {
-				dm.SetLevel(LevelDebug)
+				_ = dm.SetLevel(LevelDebug)
 				dm.Info("concurrent test", "goroutine", id, "operation", j)
 				dm.Debug("debug message", "goroutine", id, "operation", j)
 				_ = dm.IsEnabled(LevelInfo)
