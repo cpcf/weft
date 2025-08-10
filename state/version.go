@@ -78,7 +78,7 @@ func (vm *VersionManager) MigrateManifest(manifest *Manifest) (*MigrationResult,
 
 	if !vm.IsVersionSupported(currentVersion) {
 		result.Error = fmt.Sprintf("unsupported manifest version: %s", currentVersion)
-		return result, fmt.Errorf(result.Error)
+		return result, fmt.Errorf("%s", result.Error)
 	}
 
 	if currentVersion == CurrentManifestVersion {

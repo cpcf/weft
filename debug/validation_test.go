@@ -411,8 +411,8 @@ func TestTemplateValidator_ValidatePartials(t *testing.T) {
 		{
 			name:         "existing partials",
 			templatePath: "templates/main.tmpl",
-			expectErrors: 2, // both header and footer will be missing in this simple test
-			expectValid:  false,
+			expectErrors: 0, // both header and footer should be found
+			expectValid:  true,
 		},
 		{
 			name:         "missing partial",
@@ -446,6 +446,10 @@ func TestTemplateValidator_ValidatePartials(t *testing.T) {
 }
 
 func TestTemplateValidator_ValidateIncludes(t *testing.T) {
+	funcMap := template.FuncMap{
+		"include": func(string) string { return "" }, // dummy include function for validation
+	}
+	
 	testFS := fstest.MapFS{
 		"main.tmpl": &fstest.MapFile{
 			Data: []byte(`{{include "existing.tmpl"}} {{include "nonexistent.tmpl"}}`),
@@ -483,11 +487,11 @@ func TestTemplateValidator_ValidateIncludes(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			validator := NewTemplateValidator(testFS, nil, nil)
+			validator := NewTemplateValidator(testFS, funcMap, nil)
 			result := validator.ValidateTemplate(test.templatePath)
 
 			if result.Valid != test.expectValid {
-				t.Errorf("Expected valid=%v, got valid=%v", test.expectValid, result.Valid)
+				t.Errorf("Expected valid=%v, got valid=%v. Errors: %+v", test.expectValid, result.Valid, result.Errors)
 			}
 
 			missingIncludeErrors := 0

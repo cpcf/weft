@@ -641,7 +641,7 @@ func TestTemplateDebugger_ExecuteWithDebug(t *testing.T) {
 		buf.Reset()
 		td.ClearExecutions()
 
-		badTmpl, err := template.New("bad").Parse("Hello {{.NonExistent.Field}}!")
+		badTmpl, err := template.New("bad").Parse("Hello {{call .Name}}!")
 		if err != nil {
 			t.Fatalf("Failed to create template: %v", err)
 		}
@@ -749,7 +749,7 @@ func TestTemplateDebugger_GetExecutionStats(t *testing.T) {
 
 	t.Run("with executions", func(t *testing.T) {
 		successTmpl, _ := template.New("success").Parse("Success {{.Name}}")
-		failTmpl, _ := template.New("fail").Parse("Fail {{.NonExistent}}")
+		failTmpl, _ := template.New("fail").Parse("Fail {{call .Name}}")
 		data := map[string]interface{}{"Name": "Test"}
 
 		td.ExecuteWithDebug("success1", successTmpl, data)
