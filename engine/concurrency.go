@@ -24,7 +24,7 @@ type Operation struct {
 	Type         string
 	TemplatePath string
 	OutputPath   string
-	Data         interface{}
+	Data         any
 }
 
 type WorkerPool struct {
@@ -59,7 +59,7 @@ type RenderTask struct {
 	priority     int
 	templatePath string
 	outputPath   string
-	data         interface{}
+	data         any
 	renderer     Renderer
 	result       chan TaskResult
 }
@@ -74,7 +74,7 @@ func (rt *RenderTask) Execute(ctx context.Context) error {
 	defer func() {
 		result.EndTime = time.Now()
 		result.Duration = result.EndTime.Sub(result.StartTime)
-		
+
 		select {
 		case rt.result <- result:
 		case <-ctx.Done():
@@ -85,7 +85,7 @@ func (rt *RenderTask) Execute(ctx context.Context) error {
 	renderCtx := Context{
 		OutputRoot: filepath.Dir(rt.outputPath),
 	}
-	
+
 	err := rt.renderer.renderFile(renderCtx, rt.templatePath, rt.data)
 	if err != nil {
 		result.Error = err.Error()
@@ -111,7 +111,7 @@ func NewWorkerPool(size int) *WorkerPool {
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
-	
+
 	return &WorkerPool{
 		size:   size,
 		queue:  make(chan Task, size*2),
@@ -170,11 +170,11 @@ func (wp *WorkerPool) worker(id int) {
 			}
 
 			atomic.AddInt64(&wp.processing, 1)
-			
+
 			err := task.Execute(wp.ctx)
-			
+
 			atomic.AddInt64(&wp.processing, -1)
-			
+
 			if err != nil {
 				atomic.AddInt64(&wp.failed, 1)
 			} else {
@@ -189,17 +189,17 @@ func (wp *WorkerPool) worker(id int) {
 
 func (wp *WorkerPool) Stats() WorkerPoolStats {
 	return WorkerPoolStats{
-		WorkerCount:       wp.size,
-		QueueLength:      len(wp.queue),
-		QueueCapacity:    cap(wp.queue),
-		TasksCompleted:   atomic.LoadInt64(&wp.completed),
-		TasksFailed:      atomic.LoadInt64(&wp.failed),
-		TasksProcessing:  atomic.LoadInt64(&wp.processing),
+		WorkerCount:     wp.size,
+		QueueLength:     len(wp.queue),
+		QueueCapacity:   cap(wp.queue),
+		TasksCompleted:  atomic.LoadInt64(&wp.completed),
+		TasksFailed:     atomic.LoadInt64(&wp.failed),
+		TasksProcessing: atomic.LoadInt64(&wp.processing),
 	}
 }
 
 type WorkerPoolStats struct {
-	WorkerCount      int   `json:"worker_count"`
+	WorkerCount     int   `json:"worker_count"`
 	QueueLength     int   `json:"queue_length"`
 	QueueCapacity   int   `json:"queue_capacity"`
 	TasksCompleted  int64 `json:"tasks_completed"`
@@ -208,11 +208,11 @@ type WorkerPoolStats struct {
 }
 
 type ConcurrentRenderer struct {
-	pool       *WorkerPool
-	renderer   Renderer
-	results    map[string]chan TaskResult
-	resultsMu  sync.RWMutex
-	taskIDGen  int64
+	pool      *WorkerPool
+	renderer  Renderer
+	results   map[string]chan TaskResult
+	resultsMu sync.RWMutex
+	taskIDGen int64
 }
 
 func NewConcurrentRenderer(poolSize int, renderer Renderer) *ConcurrentRenderer {
@@ -229,7 +229,7 @@ func (cr *ConcurrentRenderer) Start() {
 
 func (cr *ConcurrentRenderer) Stop() {
 	cr.pool.Stop()
-	
+
 	cr.resultsMu.Lock()
 	for _, ch := range cr.results {
 		close(ch)
@@ -238,11 +238,11 @@ func (cr *ConcurrentRenderer) Stop() {
 	cr.resultsMu.Unlock()
 }
 
-func (cr *ConcurrentRenderer) RenderAsync(templatePath, outputPath string, data interface{}) (string, <-chan TaskResult, error) {
+func (cr *ConcurrentRenderer) RenderAsync(templatePath, outputPath string, data any) (string, <-chan TaskResult, error) {
 	taskID := fmt.Sprintf("task-%d", atomic.AddInt64(&cr.taskIDGen, 1))
-	
+
 	resultChan := make(chan TaskResult, 1)
-	
+
 	task := &RenderTask{
 		id:           taskID,
 		priority:     1,
@@ -282,7 +282,7 @@ func (cr *ConcurrentRenderer) RenderBatch(requests []RenderRequest) ([]TaskResul
 		if err != nil {
 			continue
 		}
-		
+
 		taskIDs = append(taskIDs, taskID)
 		resultChans = append(resultChans, resultChan)
 	}
@@ -305,9 +305,9 @@ func (cr *ConcurrentRenderer) RenderBatch(requests []RenderRequest) ([]TaskResul
 }
 
 type RenderRequest struct {
-	TemplatePath string      `json:"template_path"`
-	OutputPath   string      `json:"output_path"`
-	Data         interface{} `json:"data"`
+	TemplatePath string `json:"template_path"`
+	OutputPath   string `json:"output_path"`
+	Data         any    `json:"data"`
 }
 
 func (cr *ConcurrentRenderer) GetStats() WorkerPoolStats {
@@ -317,7 +317,7 @@ func (cr *ConcurrentRenderer) GetStats() WorkerPoolStats {
 func (cr *ConcurrentRenderer) WaitForCompletion(timeout time.Duration) error {
 	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
-	
+
 	timer := time.NewTimer(timeout)
 	defer timer.Stop()
 
@@ -345,50 +345,50 @@ func NewSafeEngine(engine Engine) *SafeEngine {
 	}
 }
 
-func (se *SafeEngine) RenderDir(ctx Context, templateDir string, data interface{}) error {
+func (se *SafeEngine) RenderDir(ctx Context, templateDir string, data any) error {
 	se.mu.RLock()
 	defer se.mu.RUnlock()
-	
+
 	return se.engine.RenderDir(ctx, templateDir, data)
 }
 
 type ConcurrentSafeMap struct {
-	data map[string]interface{}
+	data map[string]any
 	mu   sync.RWMutex
 }
 
 func NewConcurrentSafeMap() *ConcurrentSafeMap {
 	return &ConcurrentSafeMap{
-		data: make(map[string]interface{}),
+		data: make(map[string]any),
 	}
 }
 
-func (csm *ConcurrentSafeMap) Get(key string) (interface{}, bool) {
+func (csm *ConcurrentSafeMap) Get(key string) (any, bool) {
 	csm.mu.RLock()
 	defer csm.mu.RUnlock()
-	
+
 	value, exists := csm.data[key]
 	return value, exists
 }
 
-func (csm *ConcurrentSafeMap) Set(key string, value interface{}) {
+func (csm *ConcurrentSafeMap) Set(key string, value any) {
 	csm.mu.Lock()
 	defer csm.mu.Unlock()
-	
+
 	csm.data[key] = value
 }
 
 func (csm *ConcurrentSafeMap) Delete(key string) {
 	csm.mu.Lock()
 	defer csm.mu.Unlock()
-	
+
 	delete(csm.data, key)
 }
 
 func (csm *ConcurrentSafeMap) Keys() []string {
 	csm.mu.RLock()
 	defer csm.mu.RUnlock()
-	
+
 	keys := make([]string, 0, len(csm.data))
 	for k := range csm.data {
 		keys = append(keys, k)
@@ -399,13 +399,13 @@ func (csm *ConcurrentSafeMap) Keys() []string {
 func (csm *ConcurrentSafeMap) Len() int {
 	csm.mu.RLock()
 	defer csm.mu.RUnlock()
-	
+
 	return len(csm.data)
 }
 
 func (csm *ConcurrentSafeMap) Clear() {
 	csm.mu.Lock()
 	defer csm.mu.Unlock()
-	
-	csm.data = make(map[string]interface{})
+
+	csm.data = make(map[string]any)
 }

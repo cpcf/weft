@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"strings"
@@ -30,10 +31,10 @@ type SnapshotResult struct {
 }
 
 type SnapshotTestCase struct {
-	Name     string                 `json:"name"`
-	Template string                 `json:"template"`
-	Data     map[string]interface{} `json:"data"`
-	Expected string                 `json:"expected"`
+	Name     string         `json:"name"`
+	Template string         `json:"template"`
+	Data     map[string]any `json:"data"`
+	Expected string         `json:"expected"`
 }
 
 func NewSnapshotManager(snapshotDir string, updateMode bool) *SnapshotManager {
@@ -55,7 +56,7 @@ func (sm *SnapshotManager) AssertSnapshot(testName, actual string) error {
 	defer sm.mu.Unlock()
 
 	snapshotPath := filepath.Join(sm.snapshotDir, testName+".snapshot")
-	
+
 	result := SnapshotResult{
 		TestName:  testName,
 		Actual:    actual,
@@ -64,7 +65,7 @@ func (sm *SnapshotManager) AssertSnapshot(testName, actual string) error {
 		Hash:      sm.calculateHash(actual),
 	}
 
-	if err := os.MkdirAll(sm.snapshotDir, 0755); err != nil {
+	if err := os.MkdirAll(sm.snapshotDir, 0o755); err != nil {
 		return fmt.Errorf("failed to create snapshot directory: %w", err)
 	}
 
@@ -88,7 +89,7 @@ func (sm *SnapshotManager) AssertSnapshot(testName, actual string) error {
 	} else {
 		result.Expected = expected
 		result.Passed = (actual == expected)
-		
+
 		if !result.Passed {
 			if sm.updateMode {
 				if err := sm.saveSnapshot(snapshotPath, actual); err != nil {
@@ -117,7 +118,7 @@ func (sm *SnapshotManager) loadSnapshot(path string) (string, error) {
 }
 
 func (sm *SnapshotManager) saveSnapshot(path, content string) error {
-	return os.WriteFile(path, []byte(content), 0644)
+	return os.WriteFile(path, []byte(content), 0o644)
 }
 
 func (sm *SnapshotManager) calculateHash(content string) string {
@@ -128,23 +129,20 @@ func (sm *SnapshotManager) calculateHash(content string) string {
 func (sm *SnapshotManager) generateDiff(expected, actual string) string {
 	expectedLines := strings.Split(expected, "\n")
 	actualLines := strings.Split(actual, "\n")
-	
+
 	var diff strings.Builder
-	maxLines := len(expectedLines)
-	if len(actualLines) > maxLines {
-		maxLines = len(actualLines)
-	}
-	
+	maxLines := max(len(actualLines), len(expectedLines))
+
 	for i := 0; i < maxLines; i++ {
 		var expectedLine, actualLine string
-		
+
 		if i < len(expectedLines) {
 			expectedLine = expectedLines[i]
 		}
 		if i < len(actualLines) {
 			actualLine = actualLines[i]
 		}
-		
+
 		if expectedLine != actualLine {
 			diff.WriteString(fmt.Sprintf("Line %d:\n", i+1))
 			if i < len(expectedLines) {
@@ -155,25 +153,23 @@ func (sm *SnapshotManager) generateDiff(expected, actual string) string {
 			}
 		}
 	}
-	
+
 	return diff.String()
 }
 
 func (sm *SnapshotManager) GetResults() map[string]SnapshotResult {
 	sm.mu.RLock()
 	defer sm.mu.RUnlock()
-	
+
 	results := make(map[string]SnapshotResult)
-	for k, v := range sm.results {
-		results[k] = v
-	}
+	maps.Copy(results, sm.results)
 	return results
 }
 
 func (sm *SnapshotManager) GetSummary() SnapshotSummary {
 	sm.mu.RLock()
 	defer sm.mu.RUnlock()
-	
+
 	summary := SnapshotSummary{
 		TotalTests:   len(sm.results),
 		PassedTests:  0,
@@ -181,7 +177,7 @@ func (sm *SnapshotManager) GetSummary() SnapshotSummary {
 		UpdatedTests: 0,
 		UpdateMode:   sm.updateMode,
 	}
-	
+
 	for _, result := range sm.results {
 		if result.Passed {
 			summary.PassedTests++
@@ -192,7 +188,7 @@ func (sm *SnapshotManager) GetSummary() SnapshotSummary {
 			summary.UpdatedTests++
 		}
 	}
-	
+
 	return summary
 }
 
@@ -207,7 +203,7 @@ func (sm *SnapshotManager) CleanOrphanSnapshots(activeTests []string) error {
 	for _, test := range activeTests {
 		activeSet[test+".snapshot"] = true
 	}
-	
+
 	entries, err := os.ReadDir(sm.snapshotDir)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -215,27 +211,27 @@ func (sm *SnapshotManager) CleanOrphanSnapshots(activeTests []string) error {
 		}
 		return fmt.Errorf("failed to read snapshot directory: %w", err)
 	}
-	
+
 	var orphans []string
 	for _, entry := range entries {
 		if entry.IsDir() {
 			continue
 		}
-		
+
 		if strings.HasSuffix(entry.Name(), ".snapshot") {
 			if !activeSet[entry.Name()] {
 				orphans = append(orphans, entry.Name())
 			}
 		}
 	}
-	
+
 	for _, orphan := range orphans {
 		orphanPath := filepath.Join(sm.snapshotDir, orphan)
 		if err := os.Remove(orphanPath); err != nil {
 			return fmt.Errorf("failed to remove orphan snapshot %s: %w", orphan, err)
 		}
 	}
-	
+
 	return nil
 }
 
@@ -251,17 +247,17 @@ func (ss SnapshotSummary) String() string {
 	if ss.TotalTests == 0 {
 		return "No snapshot tests run"
 	}
-	
+
 	status := "PASS"
 	if ss.FailedTests > 0 {
 		status = "FAIL"
 	}
-	
+
 	result := fmt.Sprintf("%s: %d/%d tests passed", status, ss.PassedTests, ss.TotalTests)
 	if ss.UpdatedTests > 0 {
 		result += fmt.Sprintf(" (%d updated)", ss.UpdatedTests)
 	}
-	
+
 	return result
 }
 
@@ -277,7 +273,7 @@ func NewSnapshotTestSuite(snapshotDir string, updateMode bool) *SnapshotTestSuit
 	}
 }
 
-func (sts *SnapshotTestSuite) AddTestCase(name, template string, data map[string]interface{}) {
+func (sts *SnapshotTestSuite) AddTestCase(name, template string, data map[string]any) {
 	testCase := SnapshotTestCase{
 		Name:     name,
 		Template: template,
@@ -291,12 +287,12 @@ func (sts *SnapshotTestSuite) LoadTestCases(testFile string) error {
 	if err != nil {
 		return fmt.Errorf("failed to read test file: %w", err)
 	}
-	
+
 	var testCases []SnapshotTestCase
 	if err := json.Unmarshal(data, &testCases); err != nil {
 		return fmt.Errorf("failed to parse test file: %w", err)
 	}
-	
+
 	sts.testCases = append(sts.testCases, testCases...)
 	return nil
 }
@@ -306,12 +302,12 @@ func (sts *SnapshotTestSuite) SaveTestCases(testFile string) error {
 	if err != nil {
 		return fmt.Errorf("failed to marshal test cases: %w", err)
 	}
-	
-	if err := os.MkdirAll(filepath.Dir(testFile), 0755); err != nil {
+
+	if err := os.MkdirAll(filepath.Dir(testFile), 0o755); err != nil {
 		return fmt.Errorf("failed to create test directory: %w", err)
 	}
-	
-	return os.WriteFile(testFile, data, 0644)
+
+	return os.WriteFile(testFile, data, 0o644)
 }
 
 func (sts *SnapshotTestSuite) GetManager() *SnapshotManager {
@@ -342,19 +338,19 @@ func (sr *SnapshotReporter) AddResult(result SnapshotResult) {
 func (sr *SnapshotReporter) GenerateReport() string {
 	sr.mu.RLock()
 	defer sr.mu.RUnlock()
-	
+
 	if len(sr.results) == 0 {
 		return "No snapshot test results to report"
 	}
-	
+
 	var report strings.Builder
 	report.WriteString("Snapshot Test Report\n")
 	report.WriteString("===================\n\n")
-	
+
 	passed := 0
 	failed := 0
 	updated := 0
-	
+
 	for _, result := range sr.results {
 		if result.Passed {
 			passed++
@@ -364,18 +360,18 @@ func (sr *SnapshotReporter) GenerateReport() string {
 		if result.UpdatedCount > 0 {
 			updated++
 		}
-		
+
 		status := "PASS"
 		if !result.Passed {
 			status = "FAIL"
 		}
-		
+
 		report.WriteString(fmt.Sprintf("%s %s", status, result.TestName))
 		if result.UpdatedCount > 0 {
 			report.WriteString(" (updated)")
 		}
 		report.WriteString("\n")
-		
+
 		if !result.Passed && result.Expected != "" && result.Actual != "" {
 			report.WriteString("  Expected length: ")
 			report.WriteString(fmt.Sprintf("%d\n", len(result.Expected)))
@@ -387,24 +383,24 @@ func (sr *SnapshotReporter) GenerateReport() string {
 		}
 		report.WriteString("\n")
 	}
-	
+
 	report.WriteString(fmt.Sprintf("Summary: %d passed, %d failed", passed, failed))
 	if updated > 0 {
 		report.WriteString(fmt.Sprintf(", %d updated", updated))
 	}
 	report.WriteString("\n")
-	
+
 	return report.String()
 }
 
 func (sr *SnapshotReporter) ExportJSON(filename string) error {
 	sr.mu.RLock()
 	defer sr.mu.RUnlock()
-	
+
 	data, err := json.MarshalIndent(sr.results, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to marshal results: %w", err)
 	}
-	
-	return os.WriteFile(filename, data, 0644)
+
+	return os.WriteFile(filename, data, 0o644)
 }

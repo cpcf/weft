@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func formatSlice(slice interface{}, separator, format string) string {
+func formatSlice(slice any, separator, format string) string {
 	if slice == nil {
 		return ""
 	}
@@ -32,7 +32,7 @@ func formatSlice(slice interface{}, separator, format string) string {
 	return strings.Join(parts, separator)
 }
 
-func filterSlice(slice interface{}, predicate func(interface{}) bool) interface{} {
+func filterSlice(slice any, predicate func(any) bool) any {
 	if slice == nil {
 		return slice
 	}
@@ -55,7 +55,7 @@ func filterSlice(slice interface{}, predicate func(interface{}) bool) interface{
 	return result.Interface()
 }
 
-func mapSlice(slice interface{}, mapper func(interface{}) interface{}) interface{} {
+func mapSlice(slice any, mapper func(any) any) any {
 	if slice == nil {
 		return slice
 	}
@@ -78,7 +78,7 @@ func mapSlice(slice interface{}, mapper func(interface{}) interface{}) interface
 	return result.Interface()
 }
 
-func getFirst(slice interface{}) interface{} {
+func getFirst(slice any) any {
 	if slice == nil {
 		return nil
 	}
@@ -95,7 +95,7 @@ func getFirst(slice interface{}) interface{} {
 	return v.Index(0).Interface()
 }
 
-func getLast(slice interface{}) interface{} {
+func getLast(slice any) any {
 	if slice == nil {
 		return nil
 	}
@@ -112,7 +112,7 @@ func getLast(slice interface{}) interface{} {
 	return v.Index(v.Len() - 1).Interface()
 }
 
-func getRest(slice interface{}) interface{} {
+func getRest(slice any) any {
 	if slice == nil {
 		return slice
 	}
@@ -129,7 +129,7 @@ func getRest(slice interface{}) interface{} {
 	return v.Slice(1, v.Len()).Interface()
 }
 
-func reverseSlice(slice interface{}) interface{} {
+func reverseSlice(slice any) any {
 	if slice == nil {
 		return slice
 	}
@@ -142,14 +142,14 @@ func reverseSlice(slice interface{}) interface{} {
 	length := v.Len()
 	result := reflect.MakeSlice(v.Type(), length, length)
 
-	for i := 0; i < length; i++ {
+	for i := range length {
 		result.Index(i).Set(v.Index(length - 1 - i))
 	}
 
 	return result.Interface()
 }
 
-func sortSlice(slice interface{}) interface{} {
+func sortSlice(slice any) any {
 	if slice == nil {
 		return slice
 	}
@@ -187,15 +187,15 @@ func sortSlice(slice interface{}) interface{} {
 		})
 	default:
 		sort.Slice(result.Interface(), func(i, j int) bool {
-			return fmt.Sprintf("%v", result.Index(i).Interface()) < 
-				   fmt.Sprintf("%v", result.Index(j).Interface())
+			return fmt.Sprintf("%v", result.Index(i).Interface()) <
+				fmt.Sprintf("%v", result.Index(j).Interface())
 		})
 	}
 
 	return result.Interface()
 }
 
-func uniqueSlice(slice interface{}) interface{} {
+func uniqueSlice(slice any) any {
 	if slice == nil {
 		return slice
 	}
@@ -205,7 +205,7 @@ func uniqueSlice(slice interface{}) interface{} {
 		return slice
 	}
 
-	seen := make(map[interface{}]bool)
+	seen := make(map[any]bool)
 	result := reflect.MakeSlice(v.Type(), 0, v.Len())
 
 	for i := 0; i < v.Len(); i++ {
@@ -220,9 +220,9 @@ func uniqueSlice(slice interface{}) interface{} {
 	return result.Interface()
 }
 
-func makeComparableKey(item interface{}) interface{} {
+func makeComparableKey(item any) any {
 	v := reflect.ValueOf(item)
-	
+
 	switch v.Kind() {
 	case reflect.Slice, reflect.Array:
 		return fmt.Sprintf("%v", item)
@@ -240,7 +240,7 @@ func makeComparableKey(item interface{}) interface{} {
 	}
 }
 
-func shuffleSlice(slice interface{}) interface{} {
+func shuffleSlice(slice any) any {
 	if slice == nil {
 		return slice
 	}
@@ -264,7 +264,7 @@ func shuffleSlice(slice interface{}) interface{} {
 	return result.Interface()
 }
 
-func sliceContains(slice interface{}, item interface{}) bool {
+func sliceContains(slice any, item any) bool {
 	if slice == nil {
 		return false
 	}
@@ -283,7 +283,7 @@ func sliceContains(slice interface{}, item interface{}) bool {
 	return false
 }
 
-func sliceIndexOf(slice interface{}, item interface{}) int {
+func sliceIndexOf(slice any, item any) int {
 	if slice == nil {
 		return -1
 	}
@@ -302,7 +302,7 @@ func sliceIndexOf(slice interface{}, item interface{}) int {
 	return -1
 }
 
-func sliceGet(slice interface{}, index int) interface{} {
+func sliceGet(slice any, index int) any {
 	if slice == nil {
 		return nil
 	}
@@ -319,7 +319,7 @@ func sliceGet(slice interface{}, index int) interface{} {
 	return v.Index(index).Interface()
 }
 
-func sliceTake(slice interface{}, count int) interface{} {
+func sliceTake(slice any, count int) any {
 	if slice == nil {
 		return slice
 	}
@@ -340,7 +340,7 @@ func sliceTake(slice interface{}, count int) interface{} {
 	return v.Slice(0, count).Interface()
 }
 
-func sliceDrop(slice interface{}, count int) interface{} {
+func sliceDrop(slice any, count int) any {
 	if slice == nil {
 		return slice
 	}
@@ -361,7 +361,7 @@ func sliceDrop(slice interface{}, count int) interface{} {
 	return v.Slice(count, v.Len()).Interface()
 }
 
-func sliceConcat(slices ...interface{}) interface{} {
+func sliceConcat(slices ...any) any {
 	if len(slices) == 0 {
 		return nil
 	}
@@ -410,7 +410,7 @@ func sliceConcat(slices ...interface{}) interface{} {
 	return result.Interface()
 }
 
-func sliceFlatten(slice interface{}) interface{} {
+func sliceFlatten(slice any) any {
 	if slice == nil {
 		return slice
 	}
@@ -444,17 +444,17 @@ func sliceFlatten(slice interface{}) interface{} {
 	return result.Interface()
 }
 
-func sliceGroup(slice interface{}, keyFunc func(interface{}) interface{}) interface{} {
+func sliceGroup(slice any, keyFunc func(any) any) any {
 	if slice == nil {
-		return make(map[interface{}]interface{})
+		return make(map[any]any)
 	}
 
 	v := reflect.ValueOf(slice)
 	if v.Kind() != reflect.Slice && v.Kind() != reflect.Array {
-		return make(map[interface{}]interface{})
+		return make(map[any]any)
 	}
 
-	groups := make(map[interface{}][]interface{})
+	groups := make(map[any][]any)
 
 	for i := 0; i < v.Len(); i++ {
 		item := v.Index(i).Interface()
@@ -462,7 +462,7 @@ func sliceGroup(slice interface{}, keyFunc func(interface{}) interface{}) interf
 		groups[key] = append(groups[key], item)
 	}
 
-	result := make(map[interface{}]interface{})
+	result := make(map[any]any)
 	for k, v := range groups {
 		result[k] = v
 	}
@@ -470,7 +470,7 @@ func sliceGroup(slice interface{}, keyFunc func(interface{}) interface{}) interf
 	return result
 }
 
-func sliceReduce(slice interface{}, initialValue interface{}, reducer func(interface{}, interface{}) interface{}) interface{} {
+func sliceReduce(slice any, initialValue any, reducer func(any, any) any) any {
 	if slice == nil {
 		return initialValue
 	}
@@ -489,18 +489,18 @@ func sliceReduce(slice interface{}, initialValue interface{}, reducer func(inter
 	return accumulator
 }
 
-func slicePartition(slice interface{}, predicate func(interface{}) bool) interface{} {
+func slicePartition(slice any, predicate func(any) bool) any {
 	if slice == nil {
-		return [2]interface{}{nil, nil}
+		return [2]any{nil, nil}
 	}
 
 	v := reflect.ValueOf(slice)
 	if v.Kind() != reflect.Slice && v.Kind() != reflect.Array {
-		return [2]interface{}{slice, nil}
+		return [2]any{slice, nil}
 	}
 
-	var truthy []interface{}
-	var falsy []interface{}
+	var truthy []any
+	var falsy []any
 
 	for i := 0; i < v.Len(); i++ {
 		item := v.Index(i).Interface()
@@ -511,39 +511,36 @@ func slicePartition(slice interface{}, predicate func(interface{}) bool) interfa
 		}
 	}
 
-	return [2]interface{}{truthy, falsy}
+	return [2]any{truthy, falsy}
 }
 
-func sliceChunk(slice interface{}, size int) interface{} {
+func sliceChunk(slice any, size int) any {
 	if slice == nil || size <= 0 {
-		return []interface{}{}
+		return []any{}
 	}
 
 	v := reflect.ValueOf(slice)
 	if v.Kind() != reflect.Slice && v.Kind() != reflect.Array {
-		return []interface{}{slice}
+		return []any{slice}
 	}
 
 	length := v.Len()
 	if length == 0 {
-		return []interface{}{}
+		return []any{}
 	}
 
-	var chunks []interface{}
+	var chunks []any
 	for i := 0; i < length; i += size {
-		end := i + size
-		if end > length {
-			end = length
-		}
+		end := min(i+size, length)
 		chunks = append(chunks, v.Slice(i, end).Interface())
 	}
 
 	return chunks
 }
 
-func sliceZip(slices ...interface{}) interface{} {
+func sliceZip(slices ...any) any {
 	if len(slices) == 0 {
-		return []interface{}{}
+		return []any{}
 	}
 
 	var minLength int = -1
@@ -566,12 +563,12 @@ func sliceZip(slices ...interface{}) interface{} {
 	}
 
 	if len(sliceValues) == 0 || minLength == 0 {
-		return []interface{}{}
+		return []any{}
 	}
 
-	var result []interface{}
+	var result []any
 	for i := 0; i < minLength; i++ {
-		var tuple []interface{}
+		var tuple []any
 		for _, v := range sliceValues {
 			tuple = append(tuple, v.Index(i).Interface())
 		}
@@ -581,7 +578,7 @@ func sliceZip(slices ...interface{}) interface{} {
 	return result
 }
 
-func sliceDifference(slice1, slice2 interface{}) interface{} {
+func sliceDifference(slice1, slice2 any) any {
 	if slice1 == nil {
 		return slice1
 	}
@@ -600,7 +597,7 @@ func sliceDifference(slice1, slice2 interface{}) interface{} {
 		return slice1
 	}
 
-	set2 := make(map[interface{}]bool)
+	set2 := make(map[any]bool)
 	for i := 0; i < v2.Len(); i++ {
 		key := makeComparableKey(v2.Index(i).Interface())
 		set2[key] = true
@@ -618,7 +615,7 @@ func sliceDifference(slice1, slice2 interface{}) interface{} {
 	return result.Interface()
 }
 
-func sliceIntersection(slice1, slice2 interface{}) interface{} {
+func sliceIntersection(slice1, slice2 any) any {
 	if slice1 == nil || slice2 == nil {
 		return nil
 	}
@@ -633,13 +630,13 @@ func sliceIntersection(slice1, slice2 interface{}) interface{} {
 		return nil
 	}
 
-	set2 := make(map[interface{}]bool)
+	set2 := make(map[any]bool)
 	for i := 0; i < v2.Len(); i++ {
 		key := makeComparableKey(v2.Index(i).Interface())
 		set2[key] = true
 	}
 
-	seen := make(map[interface{}]bool)
+	seen := make(map[any]bool)
 	result := reflect.MakeSlice(v1.Type(), 0, v1.Len())
 
 	for i := 0; i < v1.Len(); i++ {

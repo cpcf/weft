@@ -45,7 +45,7 @@ func TestDebugValue(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		input    interface{}
+		input    any
 		expected string
 	}{
 		{
@@ -137,7 +137,7 @@ func TestDebugType(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		input    interface{}
+		input    any
 		expected []string
 	}{
 		{
@@ -219,7 +219,7 @@ func TestDebugKeys(t *testing.T) {
 	t.Run("map keys", func(t *testing.T) {
 		input := map[string]int{"zebra": 1, "apple": 2, "banana": 3}
 		result := keysFunc(input)
-		
+
 		expected := []string{"apple", "banana", "zebra"}
 		if !reflect.DeepEqual(result, expected) {
 			t.Errorf("Expected %v, got %v", expected, result)
@@ -232,9 +232,9 @@ func TestDebugKeys(t *testing.T) {
 			Age     int
 			private string
 		}{"test", 25, "hidden"}
-		
+
 		result := keysFunc(input)
-		
+
 		expected := []string{"Age", "Name"}
 		if !reflect.DeepEqual(result, expected) {
 			t.Errorf("Expected %v, got %v", expected, result)
@@ -264,7 +264,7 @@ func TestDebugSize(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		input    interface{}
+		input    any
 		expected int
 	}{
 		{
@@ -324,7 +324,7 @@ func TestDebugJSON(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		input    interface{}
+		input    any
 		expected string
 	}{
 		{
@@ -386,7 +386,7 @@ func TestDebugPretty(t *testing.T) {
 	prettyFunc := debugPretty(dm)
 
 	t.Run("pretty JSON formatting", func(t *testing.T) {
-		input := map[string]interface{}{
+		input := map[string]any{
 			"name": "test",
 			"age":  25,
 			"settings": map[string]bool{
@@ -428,7 +428,7 @@ func TestDebugLog(t *testing.T) {
 
 	t.Run("basic logging", func(t *testing.T) {
 		result := logFunc("Hello %s", "world")
-		
+
 		if result != "<!-- DEBUG: Hello world -->" {
 			t.Errorf("Expected HTML comment format, got '%s'", result)
 		}
@@ -457,7 +457,7 @@ func TestDebugTime(t *testing.T) {
 	timeFunc := debugTime(dm)
 
 	result := timeFunc()
-	
+
 	if len(result) != len("2006-01-02 15:04:05.000") {
 		t.Errorf("Expected time format length %d, got %d", len("2006-01-02 15:04:05.000"), len(result))
 	}
@@ -600,11 +600,10 @@ func TestTemplateDebugger_ExecuteWithDebug(t *testing.T) {
 		t.Fatalf("Failed to create template: %v", err)
 	}
 
-	data := map[string]interface{}{"Name": "World"}
+	data := map[string]any{"Name": "World"}
 
 	t.Run("successful execution", func(t *testing.T) {
 		output, err := td.ExecuteWithDebug("test", tmpl, data)
-		
 		if err != nil {
 			t.Errorf("Expected successful execution, got error: %v", err)
 		}
@@ -695,7 +694,7 @@ func TestTemplateDebugger_ExecuteWithDebug(t *testing.T) {
 	t.Run("execution buffer overflow", func(t *testing.T) {
 		td.ClearExecutions()
 
-		for i := 0; i < 105; i++ {
+		for i := range 105 {
 			tmpl, _ := template.New(fmt.Sprintf("test%d", i)).Parse(fmt.Sprintf("Test %d", i))
 			td.ExecuteWithDebug(fmt.Sprintf("test%d", i), tmpl, nil)
 		}
@@ -716,7 +715,7 @@ func TestTemplateDebugger_GetExecutions(t *testing.T) {
 	td := NewTemplateDebugger(dm)
 
 	tmpl, _ := template.New("test").Parse("Hello {{.Name}}")
-	data := map[string]interface{}{"Name": "World"}
+	data := map[string]any{"Name": "World"}
 
 	td.ExecuteWithDebug("test1", tmpl, data)
 	td.ExecuteWithDebug("test2", tmpl, data)
@@ -741,7 +740,7 @@ func TestTemplateDebugger_GetExecutionStats(t *testing.T) {
 
 	t.Run("empty stats", func(t *testing.T) {
 		stats := td.GetExecutionStats()
-		
+
 		if stats["total_executions"] != 0 {
 			t.Errorf("Expected 0 total executions, got %v", stats["total_executions"])
 		}
@@ -750,7 +749,7 @@ func TestTemplateDebugger_GetExecutionStats(t *testing.T) {
 	t.Run("with executions", func(t *testing.T) {
 		successTmpl, _ := template.New("success").Parse("Success {{.Name}}")
 		failTmpl, _ := template.New("fail").Parse("Fail {{call .Name}}")
-		data := map[string]interface{}{"Name": "Test"}
+		data := map[string]any{"Name": "Test"}
 
 		td.ExecuteWithDebug("success1", successTmpl, data)
 		td.ExecuteWithDebug("success2", successTmpl, data)
@@ -831,13 +830,13 @@ func TestTemplateDebugger_ConcurrentAccess(t *testing.T) {
 	numGoroutines := 10
 	executionsPerGoroutine := 10
 
-	for i := 0; i < numGoroutines; i++ {
+	for i := range numGoroutines {
 		wg.Add(1)
 		go func(id int) {
 			defer wg.Done()
 			tmpl, _ := template.New("concurrent").Parse(fmt.Sprintf("Goroutine %d: {{.Value}}", id))
-			for j := 0; j < executionsPerGoroutine; j++ {
-				data := map[string]interface{}{"Value": j}
+			for j := range executionsPerGoroutine {
+				data := map[string]any{"Value": j}
 				td.ExecuteWithDebug(fmt.Sprintf("test_%d_%d", id, j), tmpl, data)
 			}
 		}(i)
@@ -846,7 +845,7 @@ func TestTemplateDebugger_ConcurrentAccess(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		for i := 0; i < 50; i++ {
+		for range 50 {
 			_ = td.GetExecutions()
 			_ = td.GetExecutionStats()
 			time.Sleep(1 * time.Millisecond)
@@ -886,7 +885,7 @@ Current Time: {{ debugTime }}
 		t.Fatalf("Failed to parse template: %v", err)
 	}
 
-	data := map[string]interface{}{
+	data := map[string]any{
 		"Name":  "Test User",
 		"Age":   25,
 		"Items": []string{"item1", "item2", "item3"},
@@ -937,7 +936,7 @@ func TestDebugFuncMapWithDisabledDebug(t *testing.T) {
 		t.Fatalf("Failed to parse template: %v", err)
 	}
 
-	data := map[string]interface{}{
+	data := map[string]any{
 		"Name":  "Test",
 		"Age":   25,
 		"Items": []string{"a", "b"},

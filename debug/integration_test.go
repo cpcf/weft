@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"maps"
 	"strings"
 	"testing"
 	"testing/fstest"
@@ -14,7 +15,7 @@ import (
 func TestEndToEndDebuggingWorkflow(t *testing.T) {
 	// Set up a complete debugging environment
 	var logBuffer bytes.Buffer
-	
+
 	// Create debug mode with all features enabled
 	debugMode := NewDebugMode(
 		WithLevel(LevelTrace),
@@ -44,12 +45,8 @@ func TestEndToEndDebuggingWorkflow(t *testing.T) {
 
 	// Merge debug and custom function maps
 	allFuncs := make(template.FuncMap)
-	for name, fn := range debugFuncMap {
-		allFuncs[name] = fn
-	}
-	for name, fn := range customFuncMap {
-		allFuncs[name] = fn
-	}
+	maps.Copy(allFuncs, debugFuncMap)
+	maps.Copy(allFuncs, customFuncMap)
 
 	// Create filesystem with templates
 	templateFS := fstest.MapFS{
@@ -108,12 +105,12 @@ This will panic: {{dangerous}}
 		}
 
 		// Test data
-		data := map[string]interface{}{
-			"User": map[string]interface{}{
-				"Name":    "John Doe",
-				"Active":  true,
-				"Points":  50,
-				"Status":  "ACTIVE",
+		data := map[string]any{
+			"User": map[string]any{
+				"Name":   "John Doe",
+				"Active": true,
+				"Points": 50,
+				"Status": "ACTIVE",
 			},
 			"TestFailure": false,
 		}
@@ -187,12 +184,12 @@ This will panic: {{dangerous}}
 		}
 
 		// Test data that will trigger the failing function
-		data := map[string]interface{}{
-			"User": map[string]interface{}{
-				"Name":    "Jane Doe",
-				"Active":  true,
-				"Points":  25,
-				"Status":  "ACTIVE",
+		data := map[string]any{
+			"User": map[string]any{
+				"Name":   "Jane Doe",
+				"Active": true,
+				"Points": 25,
+				"Status": "ACTIVE",
 			},
 			"TestFailure": true,
 		}
@@ -263,7 +260,7 @@ This will panic: {{dangerous}}
 		// Try to parse and execute the broken template
 		tmpl := template.New("error").Funcs(allFuncs)
 		content, _ := templateFS.ReadFile("error.tmpl")
-		
+
 		_, parseErr := tmpl.Parse(string(content))
 		if parseErr == nil {
 			t.Error("Expected template parsing to fail")
@@ -439,7 +436,7 @@ This will panic: {{dangerous}}
 		// Should find all template files
 		expectedTemplates := []string{
 			"templates/main.tmpl",
-			"templates/header.tmpl", 
+			"templates/header.tmpl",
 			"templates/broken.tmpl",
 			"templates/nested/deep.tmpl",
 			"templates/functions.tmpl",
@@ -504,10 +501,10 @@ This will panic: {{dangerous}}
 
 		// Complete workflow: validate -> parse -> execute -> analyze
 		templatePath := "main.tmpl"
-		
+
 		// Step 1: Validate
 		validation := validator.ValidateTemplate(templatePath)
-		debugMode.Info("Template validation completed", 
+		debugMode.Info("Template validation completed",
 			"template", templatePath,
 			"valid", validation.Valid,
 			"errors", len(validation.Errors),
@@ -524,15 +521,15 @@ This will panic: {{dangerous}}
 
 		// Step 3: Execute with various data scenarios
 		testScenarios := []struct {
-			name string
-			data interface{}
+			name        string
+			data        any
 			expectError bool
 		}{
 			{
 				name: "valid_data",
-				data: map[string]interface{}{
-					"User": map[string]interface{}{
-						"Name": "Alice",
+				data: map[string]any{
+					"User": map[string]any{
+						"Name":   "Alice",
 						"Active": true,
 						"Points": 75,
 					},
@@ -541,14 +538,14 @@ This will panic: {{dangerous}}
 				expectError: false,
 			},
 			{
-				name: "nil_data",
-				data: nil,
+				name:        "nil_data",
+				data:        nil,
 				expectError: false, // Template functions handle nil gracefully
 			},
 			{
 				name: "partial_data",
-				data: map[string]interface{}{
-					"User": map[string]interface{}{
+				data: map[string]any{
+					"User": map[string]any{
 						"Name": "Bob",
 						// Missing other fields
 					},
@@ -564,7 +561,7 @@ This will panic: {{dangerous}}
 
 			if tmpl != nil {
 				output, execErr := templateDebugger.ExecuteWithDebug(scenario.name, tmpl.Lookup("main.tmpl"), scenario.data)
-				
+
 				if scenario.expectError && execErr == nil {
 					t.Errorf("Expected error for scenario %s", scenario.name)
 				} else if !scenario.expectError && execErr != nil {
@@ -593,14 +590,14 @@ This will panic: {{dangerous}}
 		debugMode.Info("Workflow completed",
 			"debug_uptime", finalStats.Uptime,
 			"total_executions", execStats["total_executions"],
-			"success_rate", execStats["success_rate"], 
+			"success_rate", execStats["success_rate"],
 			"total_errors", errorStats.TotalErrors)
 
 		// Verify comprehensive logging occurred
 		finalLogOutput := logBuffer.String()
 		expectedWorkflowLogs := []string{
 			"Template validation completed",
-			"execution_valid_data", 
+			"execution_valid_data",
 			"execution_nil_data",
 			"execution_partial_data",
 			"Workflow completed",

@@ -5,6 +5,7 @@ import (
 	"io/fs"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 )
@@ -20,16 +21,16 @@ type DiscoveryRule struct {
 }
 
 type DiscoveredTemplate struct {
-	Path         string            `json:"path"`
-	Name         string            `json:"name"`
-	Extension    string            `json:"extension"`
-	Directory    string            `json:"directory"`
-	Size         int64             `json:"size"`
-	IsPartial    bool              `json:"is_partial"`
-	IsInclude    bool              `json:"is_include"`
-	RuleName     string            `json:"rule_name"`
-	Priority     int               `json:"priority"`
-	Metadata     map[string]string `json:"metadata,omitempty"`
+	Path      string            `json:"path"`
+	Name      string            `json:"name"`
+	Extension string            `json:"extension"`
+	Directory string            `json:"directory"`
+	Size      int64             `json:"size"`
+	IsPartial bool              `json:"is_partial"`
+	IsInclude bool              `json:"is_include"`
+	RuleName  string            `json:"rule_name"`
+	Priority  int               `json:"priority"`
+	Metadata  map[string]string `json:"metadata,omitempty"`
 }
 
 type TemplateDiscovery struct {
@@ -157,7 +158,6 @@ func (td *TemplateDiscovery) discoverByRule(rootPath string, rule DiscoveryRule)
 
 				return nil
 			})
-			
 			if err != nil {
 				return nil, fmt.Errorf("failed to walk directory %s: %w", dir, err)
 			}
@@ -198,13 +198,7 @@ func (td *TemplateDiscovery) matchesRule(path string, rule DiscoveryRule) bool {
 	}
 
 	if len(rule.Extensions) > 0 {
-		matchesExt := false
-		for _, allowedExt := range rule.Extensions {
-			if ext == allowedExt {
-				matchesExt = true
-				break
-			}
-		}
+		matchesExt := slices.Contains(rule.Extensions, ext)
 		if !matchesExt {
 			return false
 		}

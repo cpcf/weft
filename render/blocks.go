@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/fs"
 	"regexp"
+	"slices"
 	"strings"
 	"text/template"
 )
@@ -46,11 +47,11 @@ func (bm *BlockManager) blockFunc(name, defaultContent string) string {
 	if override, exists := bm.overrides[name]; exists {
 		return override
 	}
-	
+
 	if content, exists := bm.blocks[name]; exists {
 		return content
 	}
-	
+
 	return defaultContent
 }
 
@@ -71,11 +72,11 @@ func (bm *BlockManager) blockContentFunc(name string) string {
 	if override, exists := bm.overrides[name]; exists {
 		return override
 	}
-	
+
 	if content, exists := bm.blocks[name]; exists {
 		return content
 	}
-	
+
 	return ""
 }
 
@@ -91,31 +92,25 @@ func (bm *BlockManager) GetBlock(name string) (string, bool) {
 	if override, exists := bm.overrides[name]; exists {
 		return override, true
 	}
-	
+
 	content, exists := bm.blocks[name]
 	return content, exists
 }
 
 func (bm *BlockManager) ListBlocks() []string {
 	var names []string
-	
+
 	for name := range bm.blocks {
 		names = append(names, name)
 	}
-	
+
 	for name := range bm.overrides {
-		found := false
-		for _, existing := range names {
-			if existing == name {
-				found = true
-				break
-			}
-		}
+		found := slices.Contains(names, name)
 		if !found {
 			names = append(names, name)
 		}
 	}
-	
+
 	return names
 }
 
@@ -126,7 +121,7 @@ func (bm *BlockManager) ProcessTemplate(templatePath string) (string, error) {
 	}
 
 	processedContent := bm.preprocessBlocks(string(content))
-	
+
 	tmpl, err := template.New(templatePath).Funcs(bm.funcMap).Parse(processedContent)
 	if err != nil {
 		return "", fmt.Errorf("failed to parse template %s: %w", templatePath, err)
@@ -159,11 +154,11 @@ func (bm *BlockManager) preprocessBlocks(content string) string {
 			blockName := groups[1]
 			defaultContent := groups[2]
 			blockContent := strings.TrimSpace(groups[3])
-			
+
 			if blockContent != "" {
 				bm.DefineBlock(blockName, blockContent)
 			}
-			
+
 			return fmt.Sprintf(`{{ block "%s" "%s" }}`, blockName, defaultContent)
 		}
 		return match
@@ -201,10 +196,10 @@ func (bm *BlockManager) LoadBlocksFromTemplate(templatePath string) error {
 
 func (bm *BlockManager) extractBlocks(content string) map[string]string {
 	blocks := make(map[string]string)
-	
+
 	defineRegex := regexp.MustCompile(`{{\s*define\s+"([^"]+)"\s*}}(.*?){{\s*end\s*}}`)
 	matches := defineRegex.FindAllStringSubmatch(content, -1)
-	
+
 	for _, match := range matches {
 		if len(match) > 2 {
 			blocks[match[1]] = strings.TrimSpace(match[2])
@@ -213,7 +208,7 @@ func (bm *BlockManager) extractBlocks(content string) map[string]string {
 
 	blockRegex := regexp.MustCompile(`{{\s*block\s+"([^"]+)"\s+"[^"]*"\s*}}(.*?){{\s*end\s*}}`)
 	matches = blockRegex.FindAllStringSubmatch(content, -1)
-	
+
 	for _, match := range matches {
 		if len(match) > 2 && strings.TrimSpace(match[2]) != "" {
 			blocks[match[1]] = strings.TrimSpace(match[2])
@@ -225,10 +220,10 @@ func (bm *BlockManager) extractBlocks(content string) map[string]string {
 
 func (bm *BlockManager) extractOverrides(content string) map[string]string {
 	overrides := make(map[string]string)
-	
+
 	overrideRegex := regexp.MustCompile(`{{\s*override\s+"([^"]+)"\s*}}(.*?){{\s*end\s*}}`)
 	matches := overrideRegex.FindAllStringSubmatch(content, -1)
-	
+
 	for _, match := range matches {
 		if len(match) > 2 {
 			overrides[match[1]] = strings.TrimSpace(match[2])
@@ -262,7 +257,7 @@ func (bm *BlockManager) ValidateBlocks(templatePath string) error {
 	}
 
 	blockRefs := bm.extractBlockReferences(string(content))
-	
+
 	for _, blockName := range blockRefs {
 		if _, exists := bm.GetBlock(blockName); !exists {
 			return fmt.Errorf("block '%s' is referenced but not defined", blockName)
@@ -274,10 +269,10 @@ func (bm *BlockManager) ValidateBlocks(templatePath string) error {
 
 func (bm *BlockManager) extractBlockReferences(content string) []string {
 	var refs []string
-	
+
 	blockRefRegex := regexp.MustCompile(`{{\s*block\s+"([^"]+)"`)
 	matches := blockRefRegex.FindAllStringSubmatch(content, -1)
-	
+
 	for _, match := range matches {
 		if len(match) > 1 {
 			refs = append(refs, match[1])
@@ -289,7 +284,7 @@ func (bm *BlockManager) extractBlockReferences(content string) []string {
 
 func (bm *BlockManager) GetBlockInfo() []Block {
 	var blocks []Block
-	
+
 	for name, content := range bm.blocks {
 		block := Block{
 			Name:        name,
@@ -297,12 +292,12 @@ func (bm *BlockManager) GetBlockInfo() []Block {
 			DefaultOnly: true,
 			Override:    false,
 		}
-		
+
 		if _, exists := bm.overrides[name]; exists {
 			block.Override = true
 			block.Content = bm.overrides[name]
 		}
-		
+
 		blocks = append(blocks, block)
 	}
 

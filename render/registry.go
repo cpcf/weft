@@ -2,6 +2,7 @@ package render
 
 import (
 	"fmt"
+	"maps"
 	"reflect"
 	"sort"
 	"strings"
@@ -12,20 +13,20 @@ import (
 
 type FunctionRegistry struct {
 	mu        sync.RWMutex
-	functions map[string]interface{}
+	functions map[string]any
 	metadata  map[string]FunctionMetadata
 }
 
 type FunctionMetadata struct {
-	Name        string    `json:"name"`
-	Description string    `json:"description"`
-	Category    string    `json:"category"`
+	Name        string      `json:"name"`
+	Description string      `json:"description"`
+	Category    string      `json:"category"`
 	Parameters  []ParamInfo `json:"parameters"`
-	ReturnType  string    `json:"return_type"`
-	Examples    []string  `json:"examples"`
-	Since       string    `json:"since"`
-	Deprecated  bool      `json:"deprecated"`
-	AddedAt     time.Time `json:"added_at"`
+	ReturnType  string      `json:"return_type"`
+	Examples    []string    `json:"examples"`
+	Since       string      `json:"since"`
+	Deprecated  bool        `json:"deprecated"`
+	AddedAt     time.Time   `json:"added_at"`
 }
 
 type ParamInfo struct {
@@ -40,7 +41,7 @@ type FunctionOption func(*FunctionMetadata)
 
 func NewFunctionRegistry() *FunctionRegistry {
 	return &FunctionRegistry{
-		functions: make(map[string]interface{}),
+		functions: make(map[string]any),
 		metadata:  make(map[string]FunctionMetadata),
 	}
 }
@@ -87,7 +88,7 @@ func WithDeprecated() FunctionOption {
 	}
 }
 
-func (fr *FunctionRegistry) Register(name string, fn interface{}, opts ...FunctionOption) error {
+func (fr *FunctionRegistry) Register(name string, fn any, opts ...FunctionOption) error {
 	fr.mu.Lock()
 	defer fr.mu.Unlock()
 
@@ -129,7 +130,7 @@ func (fr *FunctionRegistry) Unregister(name string) {
 	delete(fr.metadata, name)
 }
 
-func (fr *FunctionRegistry) Get(name string) (interface{}, bool) {
+func (fr *FunctionRegistry) Get(name string) (any, bool) {
 	fr.mu.RLock()
 	defer fr.mu.RUnlock()
 
@@ -163,7 +164,7 @@ func (fr *FunctionRegistry) ListByCategory() map[string][]string {
 	defer fr.mu.RUnlock()
 
 	categories := make(map[string][]string)
-	
+
 	for name, meta := range fr.metadata {
 		category := meta.Category
 		if category == "" {
@@ -184,9 +185,7 @@ func (fr *FunctionRegistry) GetFuncMap() template.FuncMap {
 	defer fr.mu.RUnlock()
 
 	funcMap := make(template.FuncMap)
-	for name, fn := range fr.functions {
-		funcMap[name] = fn
-	}
+	maps.Copy(funcMap, fr.functions)
 
 	return funcMap
 }
@@ -196,21 +195,17 @@ func (fr *FunctionRegistry) MergeFuncMap(external template.FuncMap) template.Fun
 	defer fr.mu.RUnlock()
 
 	funcMap := make(template.FuncMap)
-	
-	for name, fn := range fr.functions {
-		funcMap[name] = fn
-	}
 
-	for name, fn := range external {
-		funcMap[name] = fn
-	}
+	maps.Copy(funcMap, fr.functions)
+
+	maps.Copy(funcMap, external)
 
 	return funcMap
 }
 
 func (fr *FunctionRegistry) RegisterDefaults() {
 	defaultFuncs := DefaultFuncMap()
-	
+
 	fr.Register("snake", defaultFuncs["snake"],
 		WithDescription("Convert string to snake_case"),
 		WithCategory("string"),
@@ -313,7 +308,7 @@ func (fr *FunctionRegistry) RegisterDefaults() {
 
 func (fr *FunctionRegistry) RegisterExtended() {
 	extendedFuncs := ExtendedFuncMap()
-	
+
 	fr.Register("uuid", extendedFuncs["uuid"],
 		WithDescription("Generate a random UUID"),
 		WithCategory("utility"),
@@ -360,9 +355,9 @@ func (fr *FunctionRegistry) RegisterExtended() {
 func (fr *FunctionRegistry) inferParameters(fnValue reflect.Value) []ParamInfo {
 	fnType := fnValue.Type()
 	numIn := fnType.NumIn()
-	
+
 	var params []ParamInfo
-	for i := 0; i < numIn; i++ {
+	for i := range numIn {
 		paramType := fnType.In(i)
 		param := ParamInfo{
 			Name:     fmt.Sprintf("arg%d", i+1),
@@ -371,11 +366,11 @@ func (fr *FunctionRegistry) inferParameters(fnValue reflect.Value) []ParamInfo {
 		}
 		params = append(params, param)
 	}
-	
+
 	return params
 }
 
-func (fr *FunctionRegistry) ValidateFunction(name string, fn interface{}) error {
+func (fr *FunctionRegistry) ValidateFunction(name string, fn any) error {
 	if name == "" {
 		return fmt.Errorf("function name cannot be empty")
 	}
@@ -405,11 +400,11 @@ func (fr *FunctionRegistry) GetDocumentation() string {
 	for _, category := range categoryOrder {
 		if functions, exists := categories[category]; exists {
 			doc.WriteString(fmt.Sprintf("## %s Functions\n\n", strings.Title(category)))
-			
+
 			for _, name := range functions {
 				meta := fr.metadata[name]
 				doc.WriteString(fmt.Sprintf("### %s\n\n", name))
-				
+
 				if meta.Description != "" {
 					doc.WriteString(fmt.Sprintf("%s\n\n", meta.Description))
 				}
@@ -425,7 +420,7 @@ func (fr *FunctionRegistry) GetDocumentation() string {
 						if param.Required {
 							required = " (required)"
 						}
-						doc.WriteString(fmt.Sprintf("- `%s` (%s)%s: %s\n", 
+						doc.WriteString(fmt.Sprintf("- `%s` (%s)%s: %s\n",
 							param.Name, param.Type, required, param.Description))
 					}
 					doc.WriteString("\n")
@@ -459,9 +454,7 @@ func (fr *FunctionRegistry) ExportJSON() map[string]FunctionMetadata {
 	defer fr.mu.RUnlock()
 
 	result := make(map[string]FunctionMetadata)
-	for name, meta := range fr.metadata {
-		result[name] = meta
-	}
+	maps.Copy(result, fr.metadata)
 
 	return result
 }
@@ -470,9 +463,7 @@ func (fr *FunctionRegistry) ImportJSON(data map[string]FunctionMetadata) {
 	fr.mu.Lock()
 	defer fr.mu.Unlock()
 
-	for name, meta := range data {
-		fr.metadata[name] = meta
-	}
+	maps.Copy(fr.metadata, data)
 }
 
 func (fr *FunctionRegistry) Count() int {

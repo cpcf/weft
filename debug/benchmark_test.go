@@ -13,7 +13,7 @@ import (
 func BenchmarkDebugMode_Creation(b *testing.B) {
 	b.Run("basic", func(b *testing.B) {
 		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			dm := NewDebugMode()
 			_ = dm
 		}
@@ -22,7 +22,7 @@ func BenchmarkDebugMode_Creation(b *testing.B) {
 	b.Run("with_options", func(b *testing.B) {
 		var buf bytes.Buffer
 		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			dm := NewDebugMode(
 				WithLevel(LevelDebug),
 				WithOutput(&buf),
@@ -42,21 +42,21 @@ func BenchmarkDebugMode_Logging(b *testing.B) {
 
 	b.Run("enabled_info", func(b *testing.B) {
 		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
+		for i := 0; b.Loop(); i++ {
 			dm.Info("benchmark message", "iteration", i, "data", "test")
 		}
 	})
 
 	b.Run("enabled_debug", func(b *testing.B) {
 		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
+		for i := 0; b.Loop(); i++ {
 			dm.Debug("benchmark debug", "iteration", i, "complex", map[string]int{"count": i})
 		}
 	})
 
 	b.Run("disabled_trace", func(b *testing.B) {
 		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
+		for i := 0; b.Loop(); i++ {
 			dm.Trace("benchmark trace", "iteration", i, "data", "test")
 		}
 	})
@@ -65,7 +65,7 @@ func BenchmarkDebugMode_Logging(b *testing.B) {
 
 	b.Run("disabled_all", func(b *testing.B) {
 		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
+		for i := 0; b.Loop(); i++ {
 			dmOff.Error("error message", "iteration", i)
 			dmOff.Info("info message", "iteration", i)
 			dmOff.Debug("debug message", "iteration", i)
@@ -79,7 +79,7 @@ func BenchmarkDebugContext_Operations(b *testing.B) {
 
 	b.Run("create_context", func(b *testing.B) {
 		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
+		for i := 0; b.Loop(); i++ {
 			ctx := dm.NewContext(fmt.Sprintf("operation_%d", i))
 			_ = ctx
 		}
@@ -88,18 +88,18 @@ func BenchmarkDebugContext_Operations(b *testing.B) {
 	b.Run("set_attributes", func(b *testing.B) {
 		ctx := dm.NewContext("benchmark")
 		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
+		for i := 0; b.Loop(); i++ {
 			ctx.SetAttribute(fmt.Sprintf("key_%d", i), fmt.Sprintf("value_%d", i))
 		}
 	})
 
 	b.Run("get_attributes", func(b *testing.B) {
 		ctx := dm.NewContext("benchmark")
-		for i := 0; i < 100; i++ {
+		for i := range 100 {
 			ctx.SetAttribute(fmt.Sprintf("key_%d", i), fmt.Sprintf("value_%d", i))
 		}
 		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
+		for i := 0; b.Loop(); i++ {
 			_, _ = ctx.GetAttribute(fmt.Sprintf("key_%d", i%100))
 		}
 	})
@@ -112,7 +112,7 @@ func BenchmarkDebugValue_ReflectionUsage(b *testing.B) {
 
 	testData := []struct {
 		name  string
-		value interface{}
+		value any
 	}{
 		{"string", "hello world"},
 		{"int", 42},
@@ -120,7 +120,10 @@ func BenchmarkDebugValue_ReflectionUsage(b *testing.B) {
 		{"bool", true},
 		{"slice", []int{1, 2, 3, 4, 5}},
 		{"map", map[string]int{"a": 1, "b": 2, "c": 3}},
-		{"struct", struct{ Name string; Age int }{"John", 30}},
+		{"struct", struct {
+			Name string
+			Age  int
+		}{"John", 30}},
 		{"pointer", func() *int { i := 42; return &i }()},
 		{"nil", nil},
 	}
@@ -128,7 +131,7 @@ func BenchmarkDebugValue_ReflectionUsage(b *testing.B) {
 	for _, td := range testData {
 		b.Run(td.name, func(b *testing.B) {
 			b.ResetTimer()
-			for i := 0; i < b.N; i++ {
+			for b.Loop() {
 				result := debugFunc(td.value)
 				_ = result
 			}
@@ -141,8 +144,8 @@ func BenchmarkDebugValue_ReflectionUsage(b *testing.B) {
 
 	b.Run("disabled_overhead", func(b *testing.B) {
 		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
-			result := debugFuncOff(map[string]interface{}{"complex": "data"})
+		for b.Loop() {
+			result := debugFuncOff(map[string]any{"complex": "data"})
 			_ = result
 		}
 	})
@@ -153,7 +156,7 @@ func BenchmarkDebugHelpers_AllFunctions(b *testing.B) {
 	dm := NewDebugMode(WithLevel(LevelDebug))
 	funcMap := CreateDebugFuncMap(dm)
 
-	testData := map[string]interface{}{
+	testData := map[string]any{
 		"Name":    "John Doe",
 		"Age":     30,
 		"Active":  true,
@@ -162,41 +165,41 @@ func BenchmarkDebugHelpers_AllFunctions(b *testing.B) {
 	}
 
 	b.Run("debug", func(b *testing.B) {
-		debugFunc := funcMap["debug"].(func(interface{}) string)
+		debugFunc := funcMap["debug"].(func(any) string)
 		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			_ = debugFunc(testData)
 		}
 	})
 
 	b.Run("debugType", func(b *testing.B) {
-		typeFunc := funcMap["debugType"].(func(interface{}) string)
+		typeFunc := funcMap["debugType"].(func(any) string)
 		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			_ = typeFunc(testData)
 		}
 	})
 
 	b.Run("debugKeys", func(b *testing.B) {
-		keysFunc := funcMap["debugKeys"].(func(interface{}) []string)
+		keysFunc := funcMap["debugKeys"].(func(any) []string)
 		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			_ = keysFunc(testData)
 		}
 	})
 
 	b.Run("debugJSON", func(b *testing.B) {
-		jsonFunc := funcMap["debugJSON"].(func(interface{}) string)
+		jsonFunc := funcMap["debugJSON"].(func(any) string)
 		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			_ = jsonFunc(testData)
 		}
 	})
 
 	b.Run("debugPretty", func(b *testing.B) {
-		prettyFunc := funcMap["debugPretty"].(func(interface{}) string)
+		prettyFunc := funcMap["debugPretty"].(func(any) string)
 		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			_ = prettyFunc(testData)
 		}
 	})
@@ -204,15 +207,15 @@ func BenchmarkDebugHelpers_AllFunctions(b *testing.B) {
 	b.Run("debugTime", func(b *testing.B) {
 		timeFunc := funcMap["debugTime"].(func() string)
 		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			_ = timeFunc()
 		}
 	})
 
 	b.Run("debugContext", func(b *testing.B) {
-		contextFunc := funcMap["debugContext"].(func() map[string]interface{})
+		contextFunc := funcMap["debugContext"].(func() map[string]any)
 		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			_ = contextFunc()
 		}
 	})
@@ -238,7 +241,7 @@ Time: {{debugTime}}
 		b.Fatalf("Failed to parse template: %v", err)
 	}
 
-	testData := map[string]interface{}{
+	testData := map[string]any{
 		"Name":   "Alice Johnson",
 		"Age":    28,
 		"Scores": []int{88, 92, 85, 90},
@@ -247,7 +250,7 @@ Time: {{debugTime}}
 
 	b.Run("with_debugging", func(b *testing.B) {
 		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
+		for i := 0; b.Loop(); i++ {
 			_, _ = td.ExecuteWithDebug(fmt.Sprintf("bench_%d", i), tmpl, testData)
 		}
 	})
@@ -258,7 +261,7 @@ Time: {{debugTime}}
 	b.Run("without_debugging", func(b *testing.B) {
 		var buf bytes.Buffer
 		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			buf.Reset()
 			_ = normalTemplate.Execute(&buf, testData)
 		}
@@ -272,7 +275,7 @@ Time: {{debugTime}}
 	b.Run("debugging_disabled", func(b *testing.B) {
 		var buf bytes.Buffer
 		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			buf.Reset()
 			_ = tmplOff.Execute(&buf, testData)
 		}
@@ -284,7 +287,7 @@ func BenchmarkErrorAnalyzer_Operations(b *testing.B) {
 	ea := NewErrorAnalyzer()
 
 	// Pre-populate with some errors
-	for i := 0; i < 50; i++ {
+	for i := range 50 {
 		err := NewEnhancedError(fmt.Errorf("error %d", i), fmt.Sprintf("operation_%d", i%5))
 		err.WithTemplate(fmt.Sprintf("template_%d.tmpl", i%10))
 		err.WithContext("iteration", i)
@@ -293,7 +296,7 @@ func BenchmarkErrorAnalyzer_Operations(b *testing.B) {
 
 	b.Run("add_error", func(b *testing.B) {
 		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
+		for i := 0; b.Loop(); i++ {
 			err := NewEnhancedError(fmt.Errorf("benchmark error %d", i), "benchmark_op")
 			ea.AddError(err)
 		}
@@ -301,21 +304,21 @@ func BenchmarkErrorAnalyzer_Operations(b *testing.B) {
 
 	b.Run("get_errors", func(b *testing.B) {
 		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			_ = ea.GetErrors()
 		}
 	})
 
 	b.Run("get_errors_by_operation", func(b *testing.B) {
 		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			_ = ea.GetErrorsByOperation("operation_1")
 		}
 	})
 
 	b.Run("get_statistics", func(b *testing.B) {
 		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			_ = ea.GetStatistics()
 		}
 	})
@@ -352,7 +355,7 @@ func BenchmarkTemplateValidator_Validation(b *testing.B) {
 
 	funcMap := template.FuncMap{
 		"upper": func(s string) string { return s },
-		"debugLog": func(format string, args ...interface{}) string { 
+		"debugLog": func(format string, args ...any) string {
 			return fmt.Sprintf("<!-- %s -->", fmt.Sprintf(format, args...))
 		},
 	}
@@ -361,21 +364,21 @@ func BenchmarkTemplateValidator_Validation(b *testing.B) {
 
 	b.Run("simple_template", func(b *testing.B) {
 		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			_ = validator.ValidateTemplate("simple.tmpl")
 		}
 	})
 
 	b.Run("complex_template", func(b *testing.B) {
 		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			_ = validator.ValidateTemplate("complex.tmpl")
 		}
 	})
 
 	b.Run("broken_template", func(b *testing.B) {
 		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			_ = validator.ValidateTemplate("broken.tmpl")
 		}
 	})
@@ -386,7 +389,7 @@ func BenchmarkTemplateValidator_Validation(b *testing.B) {
 
 	b.Run("strict_validation", func(b *testing.B) {
 		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			_ = validatorStrict.ValidateTemplate("complex.tmpl")
 		}
 	})
@@ -398,7 +401,7 @@ func BenchmarkEnhancedError_Operations(b *testing.B) {
 
 	b.Run("create_enhanced_error", func(b *testing.B) {
 		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
+		for i := 0; b.Loop(); i++ {
 			err := NewEnhancedError(baseError, fmt.Sprintf("operation_%d", i))
 			_ = err
 		}
@@ -406,11 +409,11 @@ func BenchmarkEnhancedError_Operations(b *testing.B) {
 
 	b.Run("build_enhanced_error", func(b *testing.B) {
 		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
+		for i := 0; b.Loop(); i++ {
 			err := NewEnhancedError(baseError, "operation").
 				WithTemplate(fmt.Sprintf("template_%d.tmpl", i)).
 				WithOutput(fmt.Sprintf("/output/file_%d.txt", i)).
-				WithLine(i + 1).
+				WithLine(i+1).
 				WithContext("iteration", i).
 				WithContext("timestamp", time.Now()).
 				WithSuggestion("Check your template syntax").
@@ -434,14 +437,14 @@ func BenchmarkEnhancedError_Operations(b *testing.B) {
 
 	b.Run("format_detailed", func(b *testing.B) {
 		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			_ = complexError.FormatDetailed()
 		}
 	})
 
 	b.Run("capture_stack", func(b *testing.B) {
 		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			_ = captureStack(2)
 		}
 	})
@@ -481,11 +484,11 @@ func BenchmarkConcurrentAccess(b *testing.B) {
 
 	b.Run("template_debugger_concurrent", func(b *testing.B) {
 		tmpl := template.Must(template.New("concurrent").Parse("Concurrent {{.ID}}"))
-		
+
 		b.RunParallel(func(pb *testing.PB) {
 			i := 0
 			for pb.Next() {
-				data := map[string]interface{}{"ID": i}
+				data := map[string]any{"ID": i}
 				_, _ = td.ExecuteWithDebug(fmt.Sprintf("concurrent_%d", i), tmpl, data)
 				_ = td.GetExecutions()
 				_ = td.GetExecutionStats()
@@ -500,7 +503,7 @@ func BenchmarkMemoryUsage_Allocations(b *testing.B) {
 	b.Run("debug_mode_creation", func(b *testing.B) {
 		b.ReportAllocs()
 		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			dm := NewDebugMode(WithLevel(LevelDebug))
 			_ = dm
 		}
@@ -510,7 +513,7 @@ func BenchmarkMemoryUsage_Allocations(b *testing.B) {
 		baseErr := fmt.Errorf("test error")
 		b.ReportAllocs()
 		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			err := NewEnhancedError(baseErr, "operation").
 				WithTemplate("test.tmpl").
 				WithContext("key", "value")
@@ -521,11 +524,11 @@ func BenchmarkMemoryUsage_Allocations(b *testing.B) {
 	b.Run("debug_func_execution", func(b *testing.B) {
 		dm := NewDebugMode(WithLevel(LevelDebug))
 		debugFunc := debugValue(dm)
-		testData := map[string]interface{}{"name": "test", "count": 42}
-		
+		testData := map[string]any{"name": "test", "count": 42}
+
 		b.ReportAllocs()
 		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			_ = debugFunc(testData)
 		}
 	})
@@ -534,14 +537,14 @@ func BenchmarkMemoryUsage_Allocations(b *testing.B) {
 		dm := NewDebugMode(WithLevel(LevelDebug), WithOutput(&bytes.Buffer{}))
 		td := NewTemplateDebugger(dm)
 		funcMap := CreateDebugFuncMap(dm)
-		
+
 		tmpl := template.Must(template.New("alloc").Funcs(funcMap).Parse(
 			"{{debug .}} {{debugJSON .}} {{debugTime}}"))
-		data := map[string]interface{}{"test": true, "value": 123}
+		data := map[string]any{"test": true, "value": 123}
 
 		b.ReportAllocs()
 		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			_, _ = td.ExecuteWithDebug("alloc_test", tmpl, data)
 		}
 	})

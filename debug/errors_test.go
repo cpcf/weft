@@ -39,7 +39,7 @@ func TestNewEnhancedError(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := NewEnhancedError(tt.err, tt.operation)
-			
+
 			if tt.wantNil {
 				if result != nil {
 					t.Errorf("Expected nil, got %v", result)
@@ -180,9 +180,9 @@ func TestEnhancedError_WithSuggestion(t *testing.T) {
 
 func TestEnhancedError_GetContext(t *testing.T) {
 	ee := NewEnhancedError(errors.New("test"), "operation")
-	
+
 	context := ee.GetContext()
-	
+
 	if context != ee.context {
 		t.Error("GetContext should return the same context instance")
 	}
@@ -330,8 +330,8 @@ func TestErrorAnalyzer_AddError(t *testing.T) {
 
 	t.Run("buffer overflow protection", func(t *testing.T) {
 		ea.Clear()
-		
-		for i := 0; i < 105; i++ {
+
+		for i := range 105 {
 			ee := NewEnhancedError(fmt.Errorf("error %d", i), "operation")
 			ea.AddError(ee)
 		}
@@ -371,7 +371,7 @@ func TestErrorAnalyzer_GetErrors(t *testing.T) {
 
 func TestErrorAnalyzer_GetErrorsByOperation(t *testing.T) {
 	ea := NewErrorAnalyzer()
-	
+
 	ee1 := NewEnhancedError(errors.New("error1"), "template_parse")
 	ee2 := NewEnhancedError(errors.New("error2"), "file_write")
 	ee3 := NewEnhancedError(errors.New("error3"), "template_parse")
@@ -398,7 +398,7 @@ func TestErrorAnalyzer_GetErrorsByOperation(t *testing.T) {
 
 func TestErrorAnalyzer_GetErrorsByTemplate(t *testing.T) {
 	ea := NewErrorAnalyzer()
-	
+
 	ee1 := NewEnhancedError(errors.New("error1"), "op1").WithTemplate("template1.tmpl")
 	ee2 := NewEnhancedError(errors.New("error2"), "op2").WithTemplate("template2.tmpl")
 	ee3 := NewEnhancedError(errors.New("error3"), "op3").WithTemplate("template1.tmpl")
@@ -430,7 +430,7 @@ func TestErrorAnalyzer_GetStatistics(t *testing.T) {
 
 	t.Run("empty analyzer", func(t *testing.T) {
 		stats := ea.GetStatistics()
-		
+
 		if stats.TotalErrors != 0 {
 			t.Errorf("Expected 0 total errors, got %d", stats.TotalErrors)
 		}
@@ -442,15 +442,15 @@ func TestErrorAnalyzer_GetStatistics(t *testing.T) {
 
 	t.Run("with errors", func(t *testing.T) {
 		ea.Clear()
-		
+
 		start := time.Now()
-		
+
 		ee1 := NewEnhancedError(errors.New("error1"), "parse")
 		ee1.context.Timestamp = start
 		ea.AddError(ee1)
 
 		time.Sleep(1 * time.Millisecond)
-		
+
 		ee2 := NewEnhancedError(errors.New("error2"), "write").WithTemplate("template1.tmpl")
 		ee2.context.Timestamp = start.Add(10 * time.Millisecond)
 		ea.AddError(ee2)
@@ -494,7 +494,7 @@ func TestErrorAnalyzer_GetStatistics(t *testing.T) {
 
 func TestErrorAnalyzer_Clear(t *testing.T) {
 	ea := NewErrorAnalyzer()
-	
+
 	ee := NewEnhancedError(errors.New("test"), "operation")
 	ea.AddError(ee)
 
@@ -511,16 +511,16 @@ func TestErrorAnalyzer_Clear(t *testing.T) {
 
 func TestErrorAnalyzer_ConcurrentAccess(t *testing.T) {
 	ea := NewErrorAnalyzer()
-	
+
 	var wg sync.WaitGroup
 	numGoroutines := 10
 	errorsPerGoroutine := 10
 
-	for i := 0; i < numGoroutines; i++ {
+	for i := range numGoroutines {
 		wg.Add(1)
 		go func(id int) {
 			defer wg.Done()
-			for j := 0; j < errorsPerGoroutine; j++ {
+			for j := range errorsPerGoroutine {
 				ee := NewEnhancedError(fmt.Errorf("error %d-%d", id, j), fmt.Sprintf("operation_%d", id))
 				ea.AddError(ee)
 			}
@@ -530,7 +530,7 @@ func TestErrorAnalyzer_ConcurrentAccess(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		for i := 0; i < 50; i++ {
+		for range 50 {
 			_ = ea.GetErrors()
 			_ = ea.GetStatistics()
 			time.Sleep(1 * time.Millisecond)
@@ -549,7 +549,7 @@ func TestErrorStatistics_String(t *testing.T) {
 	t.Run("empty statistics", func(t *testing.T) {
 		stats := ErrorStatistics{}
 		result := stats.String()
-		
+
 		if result != "No errors recorded" {
 			t.Errorf("Expected 'No errors recorded', got '%s'", result)
 		}
@@ -558,7 +558,7 @@ func TestErrorStatistics_String(t *testing.T) {
 	t.Run("with statistics", func(t *testing.T) {
 		start := time.Now()
 		end := start.Add(5 * time.Minute)
-		
+
 		stats := ErrorStatistics{
 			TotalErrors: 3,
 			OperationStats: map[string]int{
@@ -596,15 +596,15 @@ func TestErrorStatistics_String(t *testing.T) {
 
 func TestSuggestTemplateErrors(t *testing.T) {
 	tests := []struct {
-		name           string
-		err            error
-		templatePath   string
+		name                string
+		err                 error
+		templatePath        string
 		expectedSuggestions []string
 	}{
 		{
-			name:         "nil error",
-			err:          nil,
-			templatePath: "test.tmpl",
+			name:                "nil error",
+			err:                 nil,
+			templatePath:        "test.tmpl",
 			expectedSuggestions: nil,
 		},
 		{

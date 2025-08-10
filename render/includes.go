@@ -3,8 +3,10 @@ package render
 import (
 	"fmt"
 	"io/fs"
+	"maps"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 	"text/template"
 )
@@ -50,19 +52,17 @@ func (im *IncludeManager) includeFunc(path string) (string, error) {
 	return im.processInclude(path, nil)
 }
 
-func (im *IncludeManager) includeWithFunc(path string, data interface{}) (string, error) {
+func (im *IncludeManager) includeWithFunc(path string, data any) (string, error) {
 	return im.processInclude(path, data)
 }
 
-func (im *IncludeManager) processInclude(includePath string, data interface{}) (string, error) {
+func (im *IncludeManager) processInclude(includePath string, data any) (string, error) {
 	if len(im.includeStack) >= im.maxDepth {
 		return "", fmt.Errorf("include depth limit exceeded (%d)", im.maxDepth)
 	}
 
-	for _, stackPath := range im.includeStack {
-		if stackPath == includePath {
-			return "", fmt.Errorf("circular include detected: %s", includePath)
-		}
+	if slices.Contains(im.includeStack, includePath) {
+		return "", fmt.Errorf("circular include detected: %s", includePath)
 	}
 
 	if cached, exists := im.cache[includePath]; exists {
@@ -86,7 +86,7 @@ func (im *IncludeManager) processInclude(includePath string, data interface{}) (
 	return im.renderInclude(processedContent, data, includePath)
 }
 
-func (im *IncludeManager) renderInclude(content string, data interface{}, includePath string) (string, error) {
+func (im *IncludeManager) renderInclude(content string, data any, includePath string) (string, error) {
 	im.includeStack = append(im.includeStack, includePath)
 	defer func() {
 		im.includeStack = im.includeStack[:len(im.includeStack)-1]
@@ -106,8 +106,8 @@ func (im *IncludeManager) renderInclude(content string, data interface{}, includ
 }
 
 func (im *IncludeManager) resolveIncludePath(includePath string) string {
-	if strings.HasPrefix(includePath, "/") {
-		includePath = strings.TrimPrefix(includePath, "/")
+	if after, ok := strings.CutPrefix(includePath, "/"); ok {
+		includePath = after
 	}
 
 	candidates := []string{
@@ -162,7 +162,7 @@ func (im *IncludeManager) ValidateIncludes(templatePath string) error {
 	}
 
 	includes := im.extractIncludeReferences(string(content))
-	
+
 	for _, includePath := range includes {
 		resolvedPath := im.resolveIncludePath(includePath)
 		if resolvedPath == "" {
@@ -194,10 +194,10 @@ func (im *IncludeManager) validateIncludeContent(includePath string) error {
 
 func (im *IncludeManager) extractIncludeReferences(content string) []string {
 	var includes []string
-	
+
 	includeRegex := regexp.MustCompile(`{{\s*include(?:With)?\s+"([^"]+)"`)
 	matches := includeRegex.FindAllStringSubmatch(content, -1)
-	
+
 	for _, match := range matches {
 		if len(match) > 1 {
 			includes = append(includes, match[1])
@@ -286,9 +286,7 @@ func (im *IncludeManager) GetIncludeGraph(templatePath string, visited map[strin
 			return nil, err
 		}
 
-		for k, v := range subGraph {
-			graph[k] = v
-		}
+		maps.Copy(graph, subGraph)
 	}
 
 	return graph, nil

@@ -28,7 +28,7 @@ func (c *TemplateCache) Get(fsys fs.FS, path string) (*template.Template, error)
 		fsID: uintptr(unsafe.Pointer(&fsys)),
 		path: path,
 	}
-	
+
 	c.mu.RLock()
 	if tmpl, exists := c.templates[key]; exists {
 		c.mu.RUnlock()
