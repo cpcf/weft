@@ -31,11 +31,11 @@ func (mfs *MemoryFS) WriteFile(name string, data []byte) {
 	mfs.files[name] = &MemoryFile{
 		name:    name,
 		content: data,
-		mode:    0644,
+		mode:    0o644,
 		modTime: time.Now(),
 		isDir:   false,
 	}
-	
+
 	mfs.ensureDir(path.Dir(name))
 }
 
@@ -43,11 +43,11 @@ func (mfs *MemoryFS) ensureDir(dir string) {
 	if dir == "." || dir == "/" {
 		return
 	}
-	
+
 	if _, exists := mfs.files[dir]; !exists {
 		mfs.files[dir] = &MemoryFile{
 			name:    dir,
-			mode:    0755 | fs.ModeDir,
+			mode:    0o755 | fs.ModeDir,
 			modTime: time.Now(),
 			isDir:   true,
 		}
@@ -69,18 +69,18 @@ func (mfs *MemoryFS) ReadDir(name string) ([]fs.DirEntry, error) {
 	if name == "." {
 		name = ""
 	}
-	
+
 	var entries []fs.DirEntry
 	for filePath, file := range mfs.files {
 		if path.Dir(filePath) == name {
 			entries = append(entries, &memoryDirEntry{file})
 		}
 	}
-	
+
 	sort.Slice(entries, func(i, j int) bool {
 		return entries[i].Name() < entries[j].Name()
 	})
-	
+
 	return entries, nil
 }
 
@@ -99,18 +99,18 @@ func (f *memoryFileHandle) Read(b []byte) (int, error) {
 	if f.file.isDir {
 		return 0, &fs.PathError{Op: "read", Path: f.path, Err: fs.ErrInvalid}
 	}
-	
+
 	if f.offset >= len(f.file.content) {
 		return 0, io.EOF
 	}
-	
+
 	n := copy(b, f.file.content[f.offset:])
 	f.offset += n
-	
+
 	if f.offset >= len(f.file.content) {
 		return n, io.EOF
 	}
-	
+
 	return n, nil
 }
 
@@ -126,20 +126,20 @@ func (f *memoryFileHandle) ReadDir(n int) ([]fs.DirEntry, error) {
 	if !f.file.isDir {
 		return nil, &fs.PathError{Op: "readdir", Path: f.path, Err: fs.ErrInvalid}
 	}
-	
+
 	entries, err := f.mfs.ReadDir(f.path)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	if n <= 0 {
 		return entries, nil
 	}
-	
+
 	if n > len(entries) {
 		n = len(entries)
 	}
-	
+
 	return entries[:n], nil
 }
 

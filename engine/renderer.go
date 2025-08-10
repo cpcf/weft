@@ -74,5 +74,5 @@ func (r *Renderer) resolveOutputPath(ctx Context, templatePath string) string {
 
 func (r *Renderer) ensureOutputDir(outputPath string) error {
 	dir := filepath.Dir(outputPath)
-	return os.MkdirAll(dir, 0755)
+	return os.MkdirAll(dir, 0o755)
 }

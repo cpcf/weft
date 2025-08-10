@@ -19,7 +19,7 @@ func TestEngineBasic(t *testing.T) {
 	defer os.RemoveAll(tempDir)
 
 	engine := New(WithOutputRoot(tempDir))
-	
+
 	ctx := NewContext(memFS, tempDir, "example")
 	data := map[string]any{
 		"Package": "main",

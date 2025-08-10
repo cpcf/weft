@@ -33,7 +33,7 @@ func (m *MultiError) Error() string {
 	if len(m.Errors) == 1 {
 		return m.Errors[0].Error()
 	}
-	
+
 	var msgs []string
 	for _, err := range m.Errors {
 		msgs = append(msgs, err.Error())
