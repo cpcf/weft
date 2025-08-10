@@ -107,10 +107,11 @@ func (tv *TemplateValidator) validateBraceBalance(templatePath, content string, 
 	openBraces := 0
 	
 	for lineNum, line := range lines {
-		for i, char := range line {
-			if char == '{' && i+1 < len(line) && line[i+1] == '{' {
+		for i := 0; i < len(line); i++ {
+			if i+1 < len(line) && line[i] == '{' && line[i+1] == '{' {
 				openBraces++
-			} else if char == '}' && i+1 < len(line) && line[i+1] == '}' {
+				i++ // skip the next character to avoid double counting
+			} else if i+1 < len(line) && line[i] == '}' && line[i+1] == '}' {
 				openBraces--
 				if openBraces < 0 {
 					result.Valid = false
@@ -124,6 +125,7 @@ func (tv *TemplateValidator) validateBraceBalance(templatePath, content string, 
 					})
 					openBraces = 0
 				}
+				i++ // skip the next character to avoid double counting
 			}
 		}
 	}
