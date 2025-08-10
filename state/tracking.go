@@ -58,7 +58,7 @@ type StateTracker struct {
 func NewStateTracker(outputRoot string, mode TrackingMode) *StateTracker {
 	return &StateTracker{
 		manifestManager: NewManifestManager(outputRoot),
-		mode:           mode,
+		mode:            mode,
 	}
 }
 
@@ -177,7 +177,7 @@ func (st *StateTracker) GetOrphanedFiles() ([]string, error) {
 	}
 
 	var orphans []string
-	
+
 	err := filepath.Walk(st.manifestManager.outputRoot, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -207,7 +207,6 @@ func (st *StateTracker) GetOrphanedFiles() ([]string, error) {
 
 		return nil
 	})
-
 	if err != nil {
 		return nil, fmt.Errorf("failed to walk output directory: %w", err)
 	}

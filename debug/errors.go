@@ -10,14 +10,14 @@ import (
 )
 
 type ErrorContext struct {
-	Operation    string                 `json:"operation"`
-	TemplatePath string                 `json:"template_path,omitempty"`
-	OutputPath   string                 `json:"output_path,omitempty"`
-	LineNumber   int                    `json:"line_number,omitempty"`
-	Context      map[string]interface{} `json:"context,omitempty"`
-	Suggestions  []string               `json:"suggestions,omitempty"`
-	Timestamp    time.Time              `json:"timestamp"`
-	Stack        []StackFrame           `json:"stack,omitempty"`
+	Operation    string         `json:"operation"`
+	TemplatePath string         `json:"template_path,omitempty"`
+	OutputPath   string         `json:"output_path,omitempty"`
+	LineNumber   int            `json:"line_number,omitempty"`
+	Context      map[string]any `json:"context,omitempty"`
+	Suggestions  []string       `json:"suggestions,omitempty"`
+	Timestamp    time.Time      `json:"timestamp"`
+	Stack        []StackFrame   `json:"stack,omitempty"`
 }
 
 type StackFrame struct {
@@ -38,7 +38,7 @@ func NewEnhancedError(err error, operation string) *EnhancedError {
 
 	context := &ErrorContext{
 		Operation: operation,
-		Context:   make(map[string]interface{}),
+		Context:   make(map[string]any),
 		Timestamp: time.Now(),
 	}
 
@@ -73,7 +73,7 @@ func (ee *EnhancedError) WithLine(line int) *EnhancedError {
 	return ee
 }
 
-func (ee *EnhancedError) WithContext(key string, value interface{}) *EnhancedError {
+func (ee *EnhancedError) WithContext(key string, value any) *EnhancedError {
 	ee.context.Context[key] = value
 	return ee
 }
@@ -92,16 +92,16 @@ func (ee *EnhancedError) FormatDetailed() string {
 
 	// Basic error information
 	ee.writeBasicInfo(&builder)
-	
+
 	// Optional file/location information
 	ee.writeLocationInfo(&builder)
-	
+
 	// Context data
 	ee.writeContextData(&builder)
-	
+
 	// Suggestions
 	ee.writeSuggestions(&builder)
-	
+
 	// Stack trace
 	ee.writeStackTrace(&builder)
 
@@ -132,14 +132,14 @@ func (ee *EnhancedError) writeContextData(builder *strings.Builder) {
 	if len(ee.context.Context) == 0 {
 		return
 	}
-	
+
 	builder.WriteString("\nContext:\n")
 	keys := make([]string, 0, len(ee.context.Context))
 	for k := range ee.context.Context {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
-	
+
 	for _, key := range keys {
 		builder.WriteString(fmt.Sprintf("  %s: %v\n", key, ee.context.Context[key]))
 	}
@@ -149,7 +149,7 @@ func (ee *EnhancedError) writeSuggestions(builder *strings.Builder) {
 	if len(ee.context.Suggestions) == 0 {
 		return
 	}
-	
+
 	builder.WriteString("\nSuggestions:\n")
 	for i, suggestion := range ee.context.Suggestions {
 		builder.WriteString(fmt.Sprintf("  %d. %s\n", i+1, suggestion))
@@ -160,7 +160,7 @@ func (ee *EnhancedError) writeStackTrace(builder *strings.Builder) {
 	if len(ee.context.Stack) == 0 {
 		return
 	}
-	
+
 	builder.WriteString("\nStack trace:\n")
 	for i, frame := range ee.context.Stack {
 		if i >= 5 { // Limit stack trace depth
@@ -172,7 +172,7 @@ func (ee *EnhancedError) writeStackTrace(builder *strings.Builder) {
 
 func captureStack(skip int) []StackFrame {
 	var frames []StackFrame
-	
+
 	for i := skip; ; i++ {
 		pc, file, line, ok := runtime.Caller(i)
 		if !ok {
@@ -320,12 +320,12 @@ func (es ErrorStatistics) String() string {
 
 	var builder strings.Builder
 	builder.WriteString(fmt.Sprintf("Total errors: %d\n", es.TotalErrors))
-	
+
 	if !es.TimeRange.Start.IsZero() && !es.TimeRange.End.IsZero() {
 		duration := es.TimeRange.End.Sub(es.TimeRange.Start)
-		builder.WriteString(fmt.Sprintf("Time range: %s to %s (%v)\n", 
-			es.TimeRange.Start.Format("15:04:05"), 
-			es.TimeRange.End.Format("15:04:05"), 
+		builder.WriteString(fmt.Sprintf("Time range: %s to %s (%v)\n",
+			es.TimeRange.Start.Format("15:04:05"),
+			es.TimeRange.End.Format("15:04:05"),
 			duration))
 	}
 

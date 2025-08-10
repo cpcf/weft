@@ -43,7 +43,7 @@ func (siw *SkipIfExistsWriter) NeedsWrite(path string, content []byte) (bool, er
 }
 
 type ReplaceSegmentWriter struct {
-	baseWriter Writer
+	baseWriter  Writer
 	beginMarker string
 	endMarker   string
 }
@@ -107,7 +107,7 @@ func (rsw *ReplaceSegmentWriter) NeedsWrite(path string, content []byte) (bool, 
 func (rsw *ReplaceSegmentWriter) replaceSegment(existing, newContent string) (string, error) {
 	beginPattern := regexp.QuoteMeta(rsw.beginMarker)
 	endPattern := regexp.QuoteMeta(rsw.endMarker)
-	
+
 	pattern := fmt.Sprintf(`(?s)%s.*?%s`, beginPattern, endPattern)
 	re, err := regexp.Compile(pattern)
 	if err != nil {
@@ -115,7 +115,7 @@ func (rsw *ReplaceSegmentWriter) replaceSegment(existing, newContent string) (st
 	}
 
 	replacement := fmt.Sprintf("%s\n%s\n%s", rsw.beginMarker, strings.TrimSpace(newContent), rsw.endMarker)
-	
+
 	if re.MatchString(existing) {
 		return re.ReplaceAllString(existing, replacement), nil
 	}
@@ -321,15 +321,15 @@ func (drw *DryRunWriter) Reset() {
 
 type LoggingWriter struct {
 	baseWriter Writer
-	logFunc    func(string, ...interface{})
+	logFunc    func(string, ...any)
 }
 
-func NewLoggingWriter(baseWriter Writer, logFunc func(string, ...interface{})) *LoggingWriter {
+func NewLoggingWriter(baseWriter Writer, logFunc func(string, ...any)) *LoggingWriter {
 	if baseWriter == nil {
 		baseWriter = NewBaseWriter()
 	}
 	if logFunc == nil {
-		logFunc = func(format string, args ...interface{}) {
+		logFunc = func(format string, args ...any) {
 			fmt.Printf(format+"\n", args...)
 		}
 	}
@@ -341,17 +341,17 @@ func NewLoggingWriter(baseWriter Writer, logFunc func(string, ...interface{})) *
 
 func (lw *LoggingWriter) Write(path string, content []byte, options WriteOptions) error {
 	lw.logFunc("Writing %d bytes to %s", len(content), path)
-	
+
 	start := time.Now()
 	err := lw.baseWriter.Write(path, content, options)
 	duration := time.Since(start)
-	
+
 	if err != nil {
 		lw.logFunc("Failed to write %s: %v (took %v)", path, err, duration)
 	} else {
 		lw.logFunc("Successfully wrote %s (took %v)", path, duration)
 	}
-	
+
 	return err
 }
 
@@ -394,7 +394,7 @@ func (fw *FilterWriter) Write(path string, content []byte, options WriteOptions)
 		}
 		content = filtered
 	}
-	
+
 	return fw.baseWriter.Write(path, content, options)
 }
 
@@ -410,6 +410,6 @@ func (fw *FilterWriter) NeedsWrite(path string, content []byte) (bool, error) {
 		}
 		content = filtered
 	}
-	
+
 	return fw.baseWriter.NeedsWrite(path, content)
 }

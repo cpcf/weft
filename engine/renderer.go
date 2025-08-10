@@ -23,7 +23,7 @@ func NewRenderer(logger *slog.Logger, cache *TemplateCache) *Renderer {
 
 func (r *Renderer) RenderDir(ctx Context, failMode FailureMode, templateDir string, data any) error {
 	var multiErr MultiError
-	
+
 	err := fs.WalkDir(ctx.TmplFS, templateDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			if failMode == FailFast {
@@ -49,15 +49,14 @@ func (r *Renderer) RenderDir(ctx Context, failMode FailureMode, templateDir stri
 		}
 		return nil
 	})
-	
 	if err != nil {
 		return err
 	}
-	
+
 	if multiErr.HasErrors() && failMode != BestEffort {
 		return &multiErr
 	}
-	
+
 	return nil
 }
 

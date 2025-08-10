@@ -41,14 +41,14 @@ func (dl DebugLevel) String() string {
 }
 
 type DebugMode struct {
-	level          DebugLevel
-	output         io.Writer
-	logger         *slog.Logger
+	level           DebugLevel
+	output          io.Writer
+	logger          *slog.Logger
 	enableProfiling bool
 	enableTracing   bool
 	enableMetrics   bool
-	startTime      time.Time
-	mu             sync.RWMutex
+	startTime       time.Time
+	mu              sync.RWMutex
 }
 
 type DebugOption func(*DebugMode)
@@ -102,7 +102,7 @@ func (dm *DebugMode) setupLogger() {
 	level := dm.mapDebugLevelToSlogLevel()
 
 	opts := &slog.HandlerOptions{
-		Level: level,
+		Level:     level,
 		AddSource: dm.level >= LevelDebug,
 	}
 
@@ -207,12 +207,12 @@ func (dm *DebugMode) LogError(operation string, err error, context map[string]an
 
 func (dm *DebugMode) GetStats() DebugStats {
 	return DebugStats{
-		Level:           dm.level,
-		StartTime:       dm.startTime,
-		Uptime:          time.Since(dm.startTime),
+		Level:            dm.level,
+		StartTime:        dm.startTime,
+		Uptime:           time.Since(dm.startTime),
 		ProfilingEnabled: dm.enableProfiling,
-		TracingEnabled:  dm.enableTracing,
-		MetricsEnabled:  dm.enableMetrics,
+		TracingEnabled:   dm.enableTracing,
+		MetricsEnabled:   dm.enableMetrics,
 	}
 }
 
