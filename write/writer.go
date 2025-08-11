@@ -2,6 +2,7 @@ package write
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 )
@@ -89,21 +90,8 @@ func (bw *BaseWriter) createBackup(path, backupDir string) error {
 	}
 	defer output.Close()
 
-	buf := make([]byte, 4096)
-	for {
-		n, err := input.Read(buf)
-		if err != nil && err.Error() != "EOF" {
-			return err
-		}
-		if n == 0 {
-			break
-		}
-		if _, err := output.Write(buf[:n]); err != nil {
-			return err
-		}
-	}
-
-	return nil
+	_, err = io.Copy(output, input)
+	return err
 }
 
 func (bw *BaseWriter) atomicWrite(path string, content []byte) error {

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 )
 
@@ -53,12 +54,23 @@ type TrackedFile struct {
 type StateTracker struct {
 	manifestManager *ManifestManager
 	mode            TrackingMode
+	manifestCache   *manifestCache
+	mu              sync.RWMutex
+}
+
+type manifestCache struct {
+	manifest *Manifest
+	loadTime time.Time
+	ttl      time.Duration
 }
 
 func NewStateTracker(outputRoot string, mode TrackingMode) *StateTracker {
 	return &StateTracker{
 		manifestManager: NewManifestManager(outputRoot),
 		mode:            mode,
+		manifestCache: &manifestCache{
+			ttl: 5 * time.Second,
+		},
 	}
 }
 
@@ -67,7 +79,7 @@ func (st *StateTracker) TrackFile(path, templatePath string, metadata map[string
 		return nil
 	}
 
-	manifest, err := st.manifestManager.LoadManifest()
+	manifest, err := st.getManifest()
 	if err != nil {
 		return fmt.Errorf("failed to load manifest: %w", err)
 	}
@@ -76,7 +88,11 @@ func (st *StateTracker) TrackFile(path, templatePath string, metadata map[string
 		return fmt.Errorf("failed to add entry to manifest: %w", err)
 	}
 
-	return st.manifestManager.SaveManifest(manifest)
+	err = st.manifestManager.SaveManifest(manifest)
+	if err == nil {
+		st.invalidateCache()
+	}
+	return err
 }
 
 func (st *StateTracker) UntrackFile(path string) error {
@@ -84,13 +100,17 @@ func (st *StateTracker) UntrackFile(path string) error {
 		return nil
 	}
 
-	manifest, err := st.manifestManager.LoadManifest()
+	manifest, err := st.getManifest()
 	if err != nil {
 		return fmt.Errorf("failed to load manifest: %w", err)
 	}
 
 	st.manifestManager.RemoveEntry(manifest, path)
-	return st.manifestManager.SaveManifest(manifest)
+	err = st.manifestManager.SaveManifest(manifest)
+	if err == nil {
+		st.invalidateCache()
+	}
+	return err
 }
 
 func (st *StateTracker) GetFileState(path string) (FileState, error) {
@@ -98,7 +118,7 @@ func (st *StateTracker) GetFileState(path string) (FileState, error) {
 		return FileStateUnknown, nil
 	}
 
-	manifest, err := st.manifestManager.LoadManifest()
+	manifest, err := st.getManifest()
 	if err != nil {
 		return FileStateUnknown, fmt.Errorf("failed to load manifest: %w", err)
 	}
@@ -145,7 +165,7 @@ func (st *StateTracker) GetTrackedFiles() ([]TrackedFile, error) {
 		return nil, nil
 	}
 
-	manifest, err := st.manifestManager.LoadManifest()
+	manifest, err := st.getManifest()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load manifest: %w", err)
 	}
@@ -259,7 +279,7 @@ func (st *StateTracker) IsFileTracked(path string) (bool, error) {
 		return false, nil
 	}
 
-	manifest, err := st.manifestManager.LoadManifest()
+	manifest, err := st.getManifest()
 	if err != nil {
 		return false, fmt.Errorf("failed to load manifest: %w", err)
 	}
@@ -273,7 +293,7 @@ func (st *StateTracker) RefreshManifest() error {
 		return nil
 	}
 
-	manifest, err := st.manifestManager.LoadManifest()
+	manifest, err := st.getManifest()
 	if err != nil {
 		return fmt.Errorf("failed to load manifest: %w", err)
 	}
@@ -302,5 +322,47 @@ func (st *StateTracker) RefreshManifest() error {
 	}
 
 	manifest.Generated = time.Now()
-	return st.manifestManager.SaveManifest(manifest)
+	err = st.manifestManager.SaveManifest(manifest)
+	if err == nil {
+		st.invalidateCache()
+	}
+	return err
+}
+
+// getManifest returns a cached manifest or loads it from disk
+func (st *StateTracker) getManifest() (*Manifest, error) {
+	st.mu.RLock()
+	if st.manifestCache.manifest != nil &&
+		time.Since(st.manifestCache.loadTime) < st.manifestCache.ttl {
+		manifest := st.manifestCache.manifest
+		st.mu.RUnlock()
+		return manifest, nil
+	}
+	st.mu.RUnlock()
+
+	// Need to load manifest
+	st.mu.Lock()
+	defer st.mu.Unlock()
+
+	// Double-check pattern
+	if st.manifestCache.manifest != nil &&
+		time.Since(st.manifestCache.loadTime) < st.manifestCache.ttl {
+		return st.manifestCache.manifest, nil
+	}
+
+	manifest, err := st.manifestManager.LoadManifest()
+	if err != nil {
+		return nil, err
+	}
+
+	st.manifestCache.manifest = manifest
+	st.manifestCache.loadTime = time.Now()
+	return manifest, nil
+}
+
+// invalidateCache clears the manifest cache
+func (st *StateTracker) invalidateCache() {
+	st.mu.Lock()
+	defer st.mu.Unlock()
+	st.manifestCache.manifest = nil
 }

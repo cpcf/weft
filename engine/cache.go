@@ -1,17 +1,17 @@
 package engine
 
 import (
+	"fmt"
 	"io/fs"
 	"sync"
 	"text/template"
-	"unsafe"
 
 	"github.com/cpcf/weft/render"
 )
 
 type cacheKey struct {
-	fsID uintptr
-	path string
+	fsIdentifier string
+	path         string
 }
 
 type TemplateCache struct {
@@ -26,9 +26,14 @@ func NewTemplateCache() *TemplateCache {
 }
 
 func (c *TemplateCache) Get(fsys fs.FS, path string) (*template.Template, error) {
+	fsID, err := c.getFSIdentifier(fsys)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create fs identifier: %w", err)
+	}
+
 	key := cacheKey{
-		fsID: uintptr(unsafe.Pointer(&fsys)),
-		path: path,
+		fsIdentifier: fsID,
+		path:         path,
 	}
 
 	c.mu.RLock()
@@ -63,4 +68,21 @@ func (c *TemplateCache) Clear() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.templates = make(map[cacheKey]*template.Template)
+}
+
+// getFSIdentifier creates a stable filesystem identifier
+func (c *TemplateCache) getFSIdentifier(fsys fs.FS) (string, error) {
+	// For embed.FS and other deterministic filesystems, use type info
+	if stringer, ok := fsys.(fmt.Stringer); ok {
+		return fmt.Sprintf("%T:%s", fsys, stringer.String()), nil
+	}
+
+	// For os.DirFS-like filesystems, use type name with pointer
+	typeName := fmt.Sprintf("%T", fsys)
+	if typeName == "*os.dirFS" {
+		return fmt.Sprintf("os.DirFS:%p", fsys), nil
+	}
+
+	// For other types, use type name (less efficient but safe)
+	return fmt.Sprintf("%T:%p", fsys, fsys), nil
 }

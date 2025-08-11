@@ -3,6 +3,7 @@ package engine
 import (
 	"context"
 	"fmt"
+	"io/fs"
 	"path/filepath"
 	"runtime"
 	"sync"
@@ -62,6 +63,7 @@ type RenderTask struct {
 	data         any
 	renderer     Renderer
 	result       chan TaskResult
+	tmplFS       fs.FS
 }
 
 func (rt *RenderTask) Execute(ctx context.Context) error {
@@ -81,8 +83,9 @@ func (rt *RenderTask) Execute(ctx context.Context) error {
 		}
 	}()
 
-	// Create a mock context for rendering
+	// Create context for rendering
 	renderCtx := Context{
+		TmplFS:     rt.tmplFS,
 		OutputRoot: filepath.Dir(rt.outputPath),
 	}
 
@@ -238,7 +241,7 @@ func (cr *ConcurrentRenderer) Stop() {
 	cr.resultsMu.Unlock()
 }
 
-func (cr *ConcurrentRenderer) RenderAsync(templatePath, outputPath string, data any) (string, <-chan TaskResult, error) {
+func (cr *ConcurrentRenderer) RenderAsync(tmplFS fs.FS, templatePath, outputPath string, data any) (string, <-chan TaskResult, error) {
 	taskID := fmt.Sprintf("task-%d", atomic.AddInt64(&cr.taskIDGen, 1))
 
 	resultChan := make(chan TaskResult, 1)
@@ -251,6 +254,7 @@ func (cr *ConcurrentRenderer) RenderAsync(templatePath, outputPath string, data 
 		data:         data,
 		renderer:     cr.renderer,
 		result:       resultChan,
+		tmplFS:       tmplFS,
 	}
 
 	cr.resultsMu.Lock()
@@ -278,7 +282,7 @@ func (cr *ConcurrentRenderer) RenderBatch(requests []RenderRequest) ([]TaskResul
 	var taskIDs []string
 
 	for _, req := range requests {
-		taskID, resultChan, err := cr.RenderAsync(req.TemplatePath, req.OutputPath, req.Data)
+		taskID, resultChan, err := cr.RenderAsync(req.TmplFS, req.TemplatePath, req.OutputPath, req.Data)
 		if err != nil {
 			continue
 		}
@@ -305,6 +309,7 @@ func (cr *ConcurrentRenderer) RenderBatch(requests []RenderRequest) ([]TaskResul
 }
 
 type RenderRequest struct {
+	TmplFS       fs.FS  `json:"-"`
 	TemplatePath string `json:"template_path"`
 	OutputPath   string `json:"output_path"`
 	Data         any    `json:"data"`
