@@ -1,0 +1,289 @@
+# E-commerce Database Schema Configuration
+# =======================================
+#
+# This is a complete example of a YAML configuration file that demonstrates
+# all the features of our custom database schema specification.
+#
+# You can use this as a template for creating your own schema configurations.
+
+# Basic metadata about your schema
+name: "E-commerce Database Schema"
+version: "1.0.0"
+description: "Complete database schema for an e-commerce application"
+
+# Go package name for generated code
+package: "ecommerce"
+
+# Database connection configuration
+database:
+  driver: "postgres"
+  host: "localhost"  
+  port: 5432
+  name: "ecommerce_db"
+
+# Table definitions
+tables:
+  # Users table - stores customer and admin accounts
+  - name: "users"
+    description: "System users including customers and administrators"
+    fields:
+      - name: "id"
+        type: "uuid"
+        description: "Unique user identifier"
+        required: true
+        primaryKey: true
+
+      - name: "email"
+        type: "string"
+        description: "User email address for login"
+        required: true
+        unique: true
+        maxLength: 255
+
+      - name: "first_name"
+        type: "string"
+        description: "User's first name"
+        required: true
+        maxLength: 100
+
+      - name: "last_name"
+        type: "string"
+        description: "User's last name"
+        required: true
+        maxLength: 100
+
+      - name: "password_hash"
+        type: "string"
+        description: "Encrypted password hash"
+        required: true
+
+      - name: "role"
+        type: "string"
+        description: "User role (customer, admin, etc.)"
+        required: true
+        defaultValue: "customer"
+
+      - name: "is_active"
+        type: "boolean"
+        description: "Whether the user account is active"
+        required: true
+        defaultValue: "true"
+
+      - name: "created_at"
+        type: "timestamp"
+        description: "Account creation timestamp"
+        required: true
+
+      - name: "updated_at"
+        type: "timestamp"
+        description: "Last account update timestamp"
+        required: true
+
+  # Categories table - product categories
+  - name: "categories"
+    description: "Product categories for organizing the catalog"
+    fields:
+      - name: "id"
+        type: "uuid"
+        description: "Unique category identifier"
+        required: true
+        primaryKey: true
+
+      - name: "name"
+        type: "string"
+        description: "Category display name"
+        required: true
+        unique: true
+        maxLength: 100
+
+      - name: "slug"
+        type: "string"
+        description: "URL-friendly category identifier"
+        required: true
+        unique: true
+        maxLength: 100
+
+      - name: "description"
+        type: "text"
+        description: "Category description"
+
+      - name: "parent_id"
+        type: "uuid"
+        description: "Parent category for hierarchical organization"
+        foreignKey: "categories.id"
+
+      - name: "created_at"
+        type: "timestamp"
+        description: "Category creation timestamp"
+        required: true
+
+  # Products table - main product catalog
+  - name: "products"
+    description: "Product catalog with all available items"
+    fields:
+      - name: "id"
+        type: "uuid"
+        description: "Unique product identifier"
+        required: true
+        primaryKey: true
+
+      - name: "category_id"
+        type: "uuid"
+        description: "Product category reference"
+        required: true
+        foreignKey: "categories.id"
+
+      - name: "name"
+        type: "string"
+        description: "Product display name"
+        required: true
+        maxLength: 200
+
+      - name: "slug"
+        type: "string"
+        description: "URL-friendly product identifier"
+        required: true
+        unique: true
+        maxLength: 200
+
+      - name: "description"
+        type: "text"
+        description: "Detailed product description"
+
+      - name: "price"
+        type: "decimal"
+        description: "Product price in cents"
+        required: true
+
+      - name: "stock_quantity"
+        type: "integer"
+        description: "Available inventory count"
+        required: true
+        defaultValue: "0"
+
+      - name: "sku"
+        type: "string"
+        description: "Stock keeping unit identifier"
+        required: true
+        unique: true
+        maxLength: 50
+
+      - name: "is_active"
+        type: "boolean"
+        description: "Whether the product is available for purchase"
+        required: true
+        defaultValue: "true"
+
+      - name: "metadata"
+        type: "json"
+        description: "Additional product attributes (color, size, etc.)"
+
+      - name: "created_at"
+        type: "timestamp"
+        description: "Product creation timestamp"
+        required: true
+
+      - name: "updated_at"
+        type: "timestamp"
+        description: "Last product update timestamp"
+        required: true
+
+  # Orders table - customer purchase orders
+  - name: "orders"
+    description: "Customer orders and purchase history"
+    fields:
+      - name: "id"
+        type: "uuid"
+        description: "Unique order identifier"
+        required: true
+        primaryKey: true
+
+      - name: "user_id"
+        type: "uuid"
+        description: "Customer who placed the order"
+        required: true
+        foreignKey: "users.id"
+
+      - name: "order_number"
+        type: "string"
+        description: "Human-readable order number"
+        required: true
+        unique: true
+        maxLength: 20
+
+      - name: "status"
+        type: "string"
+        description: "Order status (pending, processing, shipped, delivered, cancelled)"
+        required: true
+        defaultValue: "pending"
+
+      - name: "total_amount"
+        type: "decimal"
+        description: "Total order amount in cents"
+        required: true
+
+      - name: "shipping_address"
+        type: "json"
+        description: "Shipping address details"
+        required: true
+
+      - name: "billing_address"
+        type: "json"
+        description: "Billing address details"
+        required: true
+
+      - name: "notes"
+        type: "text"
+        description: "Order notes or special instructions"
+
+      - name: "created_at"
+        type: "timestamp"
+        description: "Order creation timestamp"
+        required: true
+
+      - name: "updated_at"
+        type: "timestamp"
+        description: "Last order update timestamp"
+        required: true
+
+  # Order items table - individual items within orders
+  - name: "order_items"
+    description: "Individual items within customer orders"
+    fields:
+      - name: "id"
+        type: "uuid"
+        description: "Unique order item identifier"
+        required: true
+        primaryKey: true
+
+      - name: "order_id"
+        type: "uuid"
+        description: "Parent order reference"
+        required: true
+        foreignKey: "orders.id"
+
+      - name: "product_id"
+        type: "uuid"
+        description: "Product being ordered"
+        required: true
+        foreignKey: "products.id"
+
+      - name: "quantity"
+        type: "integer"
+        description: "Number of items ordered"
+        required: true
+
+      - name: "unit_price"
+        type: "decimal"
+        description: "Price per unit at time of order"
+        required: true
+
+      - name: "total_price"
+        type: "decimal"
+        description: "Total price for this line item"
+        required: true
+
+      - name: "created_at"
+        type: "timestamp"
+        description: "Order item creation timestamp"
+        required: true
