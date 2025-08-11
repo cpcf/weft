@@ -1,12 +1,11 @@
 package render
 
 import (
+	"crypto/rand"
 	"fmt"
-	"math/rand"
 	"reflect"
 	"sort"
 	"strings"
-	"time"
 )
 
 func formatSlice(slice any, separator, format string) string {
@@ -254,12 +253,18 @@ func shuffleSlice(slice any) any {
 	result := reflect.MakeSlice(v.Type(), length, length)
 	reflect.Copy(result, v)
 
-	rand.Seed(time.Now().UnixNano())
-	rand.Shuffle(length, func(i, j int) {
+	for i := length - 1; i > 0; i-- {
+		randBytes := make([]byte, 4)
+		rand.Read(randBytes)
+		n := int(randBytes[0])<<24 | int(randBytes[1])<<16 | int(randBytes[2])<<8 | int(randBytes[3])
+		if n < 0 {
+			n = -n
+		}
+		j := n % (i + 1)
 		temp := result.Index(i).Interface()
 		result.Index(i).Set(result.Index(j))
 		result.Index(j).Set(reflect.ValueOf(temp))
-	})
+	}
 
 	return result.Interface()
 }

@@ -473,7 +473,7 @@ tables:
 	if posts.Name != "posts" {
 		t.Errorf("Expected table name 'posts', got '%s'", posts.Name)
 	}
-	
+
 	authorIdField := posts.Fields[1]
 	if authorIdField.ForeignKey != "authors.id" {
 		t.Errorf("Expected foreign key 'authors.id', got '%s'", authorIdField.ForeignKey)
@@ -558,10 +558,10 @@ func TestValidateForeignKeyReference(t *testing.T) {
 	}
 
 	tests := []struct {
-		name   string
-		fkRef  string
-		want   string
-		isErr  bool
+		name  string
+		fkRef string
+		want  string
+		isErr bool
 	}{
 		{"valid reference", "users.id", "", false},
 		{"valid reference 2", "posts.user_id", "", false},

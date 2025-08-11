@@ -2,20 +2,19 @@ package render
 
 import (
 	"crypto/md5"
+	"crypto/rand"
 	"crypto/sha1"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"html"
-	"math/rand"
 	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
-	"time"
 	"unicode"
 	"unicode/utf8"
 
@@ -505,29 +504,36 @@ func pathIsAbs(path string) bool {
 func generatePassword(length int) string {
 	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*"
 
-	rand.Seed(time.Now().UnixNano())
 	password := make([]byte, length)
 
 	for i := range password {
-		password[i] = charset[rand.Intn(len(charset))]
+		randBytes := make([]byte, 1)
+		rand.Read(randBytes)
+		password[i] = charset[randBytes[0]%byte(len(charset))]
 	}
 
 	return string(password)
 }
 
 func randomInt(min, max int) int {
-	rand.Seed(time.Now().UnixNano())
-	return rand.Intn(max-min) + min
+	randBytes := make([]byte, 4)
+	rand.Read(randBytes)
+	n := int(randBytes[0])<<24 | int(randBytes[1])<<16 | int(randBytes[2])<<8 | int(randBytes[3])
+	if n < 0 {
+		n = -n
+	}
+	return n%(max-min) + min
 }
 
 func randomString(length int) string {
 	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
-	rand.Seed(time.Now().UnixNano())
 	result := make([]byte, length)
 
 	for i := range result {
-		result[i] = charset[rand.Intn(len(charset))]
+		randBytes := make([]byte, 1)
+		rand.Read(randBytes)
+		result[i] = charset[randBytes[0]%byte(len(charset))]
 	}
 
 	return string(result)
