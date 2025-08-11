@@ -8,6 +8,7 @@ gogenkit provides a modular template processing system designed for generating c
 
 ## Packages
 
+- **[config](config/)** - Generic YAML configuration loading with validation support
 - **[engine](engine/)** - Core template processing with caching and concurrent rendering
 - **[postprocess](postprocess/)** - Extensible post-processing framework for transforming generated content
 - **[processors](processors/)** - Built-in post-processors (Go imports, whitespace cleanup, headers, etc.)
@@ -91,3 +92,33 @@ eng.AddPostProcessorFunc(func(filePath string, content []byte) ([]byte, error) {
 ```
 
 See [postprocess/README.md](postprocess/README.md) for comprehensive documentation.
+
+## Configuration Loading
+
+The config package provides utilities for loading YAML configuration files into your custom types:
+
+```go
+import "github.com/cpcf/gogenkit/config"
+
+type MyConfig struct {
+    Name    string            `yaml:"name"`
+    Version string            `yaml:"version"`
+    Options map[string]string `yaml:"options"`
+}
+
+func main() {
+    var cfg MyConfig
+    
+    // Load configuration from YAML file
+    err := config.LoadYAML("config.yaml", &cfg)
+    if err != nil {
+        log.Fatal(err)
+    }
+    
+    // Use configuration with template engine
+    eng := engine.New(engine.WithOutputRoot(cfg.Options["output_dir"]))
+    // ...
+}
+```
+
+See [config/README.md](config/README.md) for detailed documentation including validation and testing utilities.

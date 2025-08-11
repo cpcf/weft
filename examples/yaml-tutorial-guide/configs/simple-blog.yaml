@@ -1,0 +1,99 @@
+# Simple Blog Database Schema
+# ==========================
+#
+# This is a simpler example that demonstrates the minimum required fields
+# and basic relationships. Use this as a starting point for your own schemas.
+
+name: "Simple Blog Schema"
+version: "1.0.0" 
+description: "Basic database schema for a blog application"
+package: "blog"
+
+database:
+  driver: "sqlite"
+  host: "localhost"
+  port: 3306
+  name: "blog.db"
+
+tables:
+  # Authors table
+  - name: "authors"
+    description: "Blog post authors"
+    fields:
+      - name: "id"
+        type: "integer"
+        description: "Author ID"
+        required: true
+        primaryKey: true
+
+      - name: "name"
+        type: "string"
+        description: "Author display name"
+        required: true
+        maxLength: 100
+
+      - name: "email"
+        type: "string"
+        description: "Author email"
+        required: true
+        unique: true
+        maxLength: 255
+
+      - name: "bio"
+        type: "text"
+        description: "Author biography"
+
+      - name: "created_at"
+        type: "timestamp"
+        description: "Account creation time"
+        required: true
+
+  # Posts table  
+  - name: "posts"
+    description: "Blog posts"
+    fields:
+      - name: "id"
+        type: "integer"
+        description: "Post ID"
+        required: true
+        primaryKey: true
+
+      - name: "author_id"
+        type: "integer"
+        description: "Post author"
+        required: true
+        foreignKey: "authors.id"
+
+      - name: "title"
+        type: "string"
+        description: "Post title"
+        required: true
+        maxLength: 200
+
+      - name: "slug"
+        type: "string"
+        description: "URL-friendly identifier"
+        required: true
+        unique: true
+        maxLength: 200
+
+      - name: "content"
+        type: "text"
+        description: "Post content"
+        required: true
+
+      - name: "published"
+        type: "boolean"
+        description: "Whether post is published"
+        required: true
+        defaultValue: "false"
+
+      - name: "created_at"
+        type: "timestamp"
+        description: "Post creation time"
+        required: true
+
+      - name: "updated_at"
+        type: "timestamp"
+        description: "Last update time"
+        required: true
