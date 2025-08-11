@@ -1,5 +1,7 @@
 # weft
 
+![weft](./weft.png)
+
 A Go template engine for code generation with extensible post-processing, state management, debugging, and testing utilities.
 
 ## Overview
