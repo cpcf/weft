@@ -1,10 +1,10 @@
-module github.com/cpcf/gogenkit/examples/yaml-tutorial-guide
+module github.com/cpcf/weft/examples/yaml-tutorial-guide
 
 go 1.24.6
 
-replace github.com/cpcf/gogenkit => ../..
+replace github.com/cpcf/weft => ../..
 
-require github.com/cpcf/gogenkit v0.0.0-00010101000000-000000000000
+require github.com/cpcf/weft v0.0.0-00010101000000-000000000000
 
 require (
 	github.com/google/uuid v1.6.0 // indirect

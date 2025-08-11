@@ -4,7 +4,7 @@ import (
 	"io"
 	"log/slog"
 
-	"github.com/cpcf/gogenkit/postprocess"
+	"github.com/cpcf/weft/postprocess"
 )
 
 type Engine struct {

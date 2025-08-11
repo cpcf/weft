@@ -1,6 +1,6 @@
 # API Client Generator Example
 
-This example demonstrates how to use gogenkit to generate a complete Go API client from a structured configuration. It showcases a realistic use case where you might need to create client libraries for REST APIs.
+This example demonstrates how to use weft to generate a complete Go API client from a structured configuration. It showcases a realistic use case where you might need to create client libraries for REST APIs.
 
 ## What This Example Does
 
@@ -24,7 +24,7 @@ generated/
 └── client.go    # Main HTTP client with endpoint methods
 ```
 
-## Key gogenkit Features Demonstrated
+## Key weft Features Demonstrated
 
 ### 1. Template Functions
 - **Case conversion**: `pascal`, `camel`, `kebab` for proper Go naming
@@ -163,7 +163,7 @@ This structure mimics real API specifications like OpenAPI/Swagger, making it pr
 
 1. **Real-world problem**: Generating API clients is a common need
 2. **Production-ready patterns**: Follows Go best practices and conventions
-3. **Complex template logic**: Shows gogenkit handling sophisticated generation scenarios
+3. **Complex template logic**: Shows weft handling sophisticated generation scenarios
 4. **Maintainable structure**: Organized templates that can be extended
 5. **Professional output**: Generated code looks hand-written and idiomatic
 

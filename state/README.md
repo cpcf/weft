@@ -1,6 +1,6 @@
 # State Package
 
-Package state provides state management, file tracking, manifest handling, cleanup operations, and versioning capabilities for gogenkit. It offers configurable tracking modes, orphan file detection, automatic cleanup, manifest versioning, and migration support for maintaining consistent output state across template generations.
+Package state provides state management, file tracking, manifest handling, cleanup operations, and versioning capabilities for weft. It offers configurable tracking modes, orphan file detection, automatic cleanup, manifest versioning, and migration support for maintaining consistent output state across template generations.
 
 ## Architecture
 
@@ -22,7 +22,7 @@ tracker := state.NewStateTracker("/path/to/output", state.TrackingModeEnabled)
 ### Track Generated Files
 
 ```go
-metadata := map[string]string{"author": "gogenkit", "template_version": "1.0"}
+metadata := map[string]string{"author": "weft", "template_version": "1.0"}
 err := tracker.TrackFile("output/file.go", "templates/file.go.tmpl", metadata)
 ```
 

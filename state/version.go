@@ -39,7 +39,7 @@ type VersionManager struct {
 
 func NewVersionManager(outputRoot, backupDir string) *VersionManager {
 	if backupDir == "" {
-		backupDir = filepath.Join(outputRoot, ".gogenkit", "backups")
+		backupDir = filepath.Join(outputRoot, ".weft", "backups")
 	}
 
 	return &VersionManager{
@@ -135,7 +135,7 @@ func (vm *VersionManager) migrateFrom0_0(manifest *Manifest) error {
 }
 
 func (vm *VersionManager) backupManifest() (string, error) {
-	manifestPath := filepath.Join(vm.outputRoot, ".gogenkit.manifest.json")
+	manifestPath := filepath.Join(vm.outputRoot, ".weft.manifest.json")
 
 	if _, err := os.Stat(manifestPath); os.IsNotExist(err) {
 		return "", nil
@@ -179,7 +179,7 @@ func (vm *VersionManager) backupManifest() (string, error) {
 }
 
 func (vm *VersionManager) GetVersionInfo() (*VersionInfo, error) {
-	manifestPath := filepath.Join(vm.outputRoot, ".gogenkit.manifest.json")
+	manifestPath := filepath.Join(vm.outputRoot, ".weft.manifest.json")
 
 	if _, err := os.Stat(manifestPath); os.IsNotExist(err) {
 		return &VersionInfo{
@@ -253,7 +253,7 @@ func (vm *VersionManager) ListBackups() ([]string, error) {
 
 func (vm *VersionManager) RestoreBackup(backupName string) error {
 	backupPath := filepath.Join(vm.backupDir, backupName)
-	manifestPath := filepath.Join(vm.outputRoot, ".gogenkit.manifest.json")
+	manifestPath := filepath.Join(vm.outputRoot, ".weft.manifest.json")
 
 	if _, err := os.Stat(backupPath); os.IsNotExist(err) {
 		return fmt.Errorf("backup file does not exist: %s", backupName)

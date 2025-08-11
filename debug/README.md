@@ -1,6 +1,6 @@
 # Debug Package
 
-Package debug provides debugging, error handling, and validation capabilities for gogenkit. It offers configurable debug modes, enhanced error reporting with stack traces, template validation, and a rich set of debugging helper functions.
+Package debug provides debugging, error handling, and validation capabilities for weft. It offers configurable debug modes, enhanced error reporting with stack traces, template validation, and a rich set of debugging helper functions.
 
 ## Architecture
 

@@ -1,6 +1,6 @@
 # Render Package
 
-Package render provides a template rendering system for gogenkit. It offers advanced template discovery, block management, partial and include support, collection operations, and an extensive function registry with string manipulation utilities.
+Package render provides a template rendering system for weft. It offers advanced template discovery, block management, partial and include support, collection operations, and an extensive function registry with string manipulation utilities.
 
 ## Architecture
 

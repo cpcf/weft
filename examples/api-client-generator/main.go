@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/cpcf/gogenkit/engine"
-	"github.com/cpcf/gogenkit/processors"
+	"github.com/cpcf/weft/engine"
+	"github.com/cpcf/weft/processors"
 )
 
 //go:embed templates

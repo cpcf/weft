@@ -1,8 +1,8 @@
-module github.com/cpcf/gogenkit/examples/api-client-generator
+module github.com/cpcf/weft/examples/api-client-generator
 
 go 1.24.6
 
-require github.com/cpcf/gogenkit v0.0.0
+require github.com/cpcf/weft v0.0.0
 
 require (
 	github.com/google/uuid v1.6.0 // indirect
@@ -11,4 +11,4 @@ require (
 	golang.org/x/tools v0.28.0 // indirect
 )
 
-replace github.com/cpcf/gogenkit => ../../
+replace github.com/cpcf/weft => ../../

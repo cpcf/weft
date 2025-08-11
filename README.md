@@ -1,10 +1,10 @@
-# gogenkit
+# weft
 
 A Go template engine for code generation with extensible post-processing, state management, debugging, and testing utilities.
 
 ## Overview
 
-gogenkit provides a modular template processing system designed for generating code and managing output files. It includes template rendering, extensible post-processing, file state tracking, debugging capabilities, and testing utilities.
+weft provides a modular template processing system designed for generating code and managing output files. It includes template rendering, extensible post-processing, file state tracking, debugging capabilities, and testing utilities.
 
 ## Packages
 
@@ -24,8 +24,8 @@ gogenkit provides a modular template processing system designed for generating c
 package main
 
 import (
-    "github.com/cpcf/gogenkit/engine"
-    "github.com/cpcf/gogenkit/processors"
+    "github.com/cpcf/weft/engine"
+    "github.com/cpcf/weft/processors"
 )
 
 func main() {
@@ -52,7 +52,7 @@ func main() {
 
 ## Post-Processing System
 
-gogenkit includes an extensible post-processing framework that transforms generated content:
+weft includes an extensible post-processing framework that transforms generated content:
 
 ### Built-in Processors
 
@@ -98,7 +98,7 @@ See [postprocess/README.md](postprocess/README.md) for comprehensive documentati
 The config package provides utilities for loading YAML configuration files into your custom types:
 
 ```go
-import "github.com/cpcf/gogenkit/config"
+import "github.com/cpcf/weft/config"
 
 type MyConfig struct {
     Name    string            `yaml:"name"`
@@ -129,4 +129,4 @@ The repository includes complete working examples that demonstrate real-world us
 
 - **[api-client-generator](examples/api-client-generator/)** - Generate complete Go API clients from YAML specifications. Shows complex template logic, professional code generation patterns, and realistic use cases for REST API client libraries.
 
-- **[yaml-tutorial-guide](examples/yaml-tutorial-guide/)** - Comprehensive tutorial for building YAML-based configuration systems. Learn to create custom specifications, implement validation, and integrate with gogenkit templates.
+- **[yaml-tutorial-guide](examples/yaml-tutorial-guide/)** - Comprehensive tutorial for building YAML-based configuration systems. Learn to create custom specifications, implement validation, and integrate with weft templates.

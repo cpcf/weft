@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/cpcf/gogenkit/config"
+	"github.com/cpcf/weft/config"
 )
 
 // TestDatabaseSchema_Validate_Success tests validation with a complete, valid schema

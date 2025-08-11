@@ -1,4 +1,4 @@
-module github.com/cpcf/gogenkit
+module github.com/cpcf/weft
 
 go 1.24.6
 
