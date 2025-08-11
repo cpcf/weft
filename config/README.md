@@ -1,6 +1,6 @@
 # Config Package
 
-The config package provides generic YAML configuration loading capabilities for gogenkit users. It allows you to easily load YAML configuration files into your custom specification types.
+The config package provides generic YAML configuration loading capabilities for weft users. It allows you to easily load YAML configuration files into your custom specification types.
 
 ## Features
 
@@ -19,7 +19,7 @@ package main
 
 import (
     "fmt"
-    "github.com/cpcf/gogenkit/config"
+    "github.com/cpcf/weft/config"
 )
 
 // Define your configuration struct with YAML tags

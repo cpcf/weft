@@ -21,10 +21,10 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/cpcf/gogenkit/config"
-	"github.com/cpcf/gogenkit/engine"
-	"github.com/cpcf/gogenkit/examples/yaml-tutorial-guide/spec"
-	"github.com/cpcf/gogenkit/processors"
+	"github.com/cpcf/weft/config"
+	"github.com/cpcf/weft/engine"
+	"github.com/cpcf/weft/examples/yaml-tutorial-guide/spec"
+	"github.com/cpcf/weft/processors"
 )
 
 // STEP 1: Embed your template files

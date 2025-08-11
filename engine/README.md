@@ -1,6 +1,6 @@
 # Engine Package
 
-Package engine provides the core template processing engine for gogenkit. It handles template rendering with caching, concurrent processing, error handling, and context management to support efficient code generation workflows.
+Package engine provides the core template processing engine for weft. It handles template rendering with caching, concurrent processing, error handling, and context management to support efficient code generation workflows.
 
 ## Architecture
 

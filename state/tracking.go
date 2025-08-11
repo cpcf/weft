@@ -192,7 +192,7 @@ func (st *StateTracker) GetOrphanedFiles() ([]string, error) {
 			return err
 		}
 
-		if filepath.Base(relPath) == ".gogenkit.manifest.json" {
+		if filepath.Base(relPath) == ".weft.manifest.json" {
 			return nil
 		}
 

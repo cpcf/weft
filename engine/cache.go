@@ -6,7 +6,7 @@ import (
 	"text/template"
 	"unsafe"
 
-	"github.com/cpcf/gogenkit/render"
+	"github.com/cpcf/weft/render"
 )
 
 type cacheKey struct {

@@ -1,6 +1,6 @@
-# YAML Configuration Tutorial for gogenkit
+# YAML Configuration Tutorial for weft
 
-This tutorial teaches you how to create your own YAML-based configuration system using the gogenkit toolkit. By the end, you'll understand how to define custom specification types, validate YAML configurations, and generate code from your specifications.
+This tutorial teaches you how to create your own YAML-based configuration system using the weft toolkit. By the end, you'll understand how to define custom specification types, validate YAML configurations, and generate code from your specifications.
 
 ## 🎯 What You'll Learn
 

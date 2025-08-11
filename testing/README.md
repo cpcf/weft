@@ -1,6 +1,6 @@
 # Testing Package
 
-Package testing provides testing utilities, performance benchmarking, memory analysis, and snapshot testing capabilities for gogenkit. It offers configurable benchmark runners, memory profilers, filesystem mocks, snapshot management, and a rich set of testing helper functions.
+Package testing provides testing utilities, performance benchmarking, memory analysis, and snapshot testing capabilities for weft. It offers configurable benchmark runners, memory profilers, filesystem mocks, snapshot management, and a rich set of testing helper functions.
 
 ## Architecture
 

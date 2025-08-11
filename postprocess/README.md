@@ -15,8 +15,8 @@ Post-processors allow you to:
 
 ```go
 import (
-    "github.com/cpcf/gogenkit/engine"
-    "github.com/cpcf/gogenkit/processors"
+    "github.com/cpcf/weft/engine"
+    "github.com/cpcf/weft/processors"
 )
 
 // Create engine and add processors

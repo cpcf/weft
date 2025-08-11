@@ -36,7 +36,7 @@ type ManifestManager struct {
 func NewManifestManager(outputRoot string) *ManifestManager {
 	return &ManifestManager{
 		outputRoot:   outputRoot,
-		manifestPath: filepath.Join(outputRoot, ".gogenkit.manifest.json"),
+		manifestPath: filepath.Join(outputRoot, ".weft.manifest.json"),
 	}
 }
 

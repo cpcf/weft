@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/cpcf/gogenkit/postprocess"
+	"github.com/cpcf/weft/postprocess"
 )
 
 type Renderer struct {

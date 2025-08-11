@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	gogentest "github.com/cpcf/gogenkit/testing"
+	gogentest "github.com/cpcf/weft/testing"
 )
 
 func TestEngineBasic(t *testing.T) {
