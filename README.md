@@ -1,6 +1,11 @@
-# weft
 
-![weft](./weft.png)
+<p align="center">
+  <img src="./weft.png" />
+</p>
+
+> _noun_ the horizontal threads in weaving, creating the fabric's structure.
+
+# weft 
 
 A Go template engine for code generation with extensible post-processing, state management, debugging, and testing utilities.
 
