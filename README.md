@@ -3,7 +3,7 @@
   <img src="./weft.png" />
 </p>
 
-> _noun_ the horizontal threads in weaving, creating the fabric's structure.
+> _noun_ - the horizontal threads in weaving, creating the fabric's structure.
 
 # weft 
 
