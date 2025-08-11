@@ -216,6 +216,7 @@ type ConcurrentRenderer struct {
 	results   map[string]chan TaskResult
 	resultsMu sync.RWMutex
 	taskIDGen int64
+	stopped   int32 // atomic flag to track if renderer is stopped
 }
 
 func NewConcurrentRenderer(poolSize int, renderer Renderer) *ConcurrentRenderer {
@@ -231,17 +232,50 @@ func (cr *ConcurrentRenderer) Start() {
 }
 
 func (cr *ConcurrentRenderer) Stop() {
+	// Use atomic CAS to ensure Stop() is only executed once
+	if !atomic.CompareAndSwapInt32(&cr.stopped, 0, 1) {
+		return // Already stopped
+	}
+
+	// First, stop accepting new tasks and cancel the worker pool context
 	cr.pool.Stop()
 
-	cr.resultsMu.Lock()
-	for _, ch := range cr.results {
-		close(ch)
+	// Wait for all currently executing tasks to complete with a timeout
+	// This ensures no task will try to write to result channels after we close them
+	timeout := time.After(30 * time.Second) // Reasonable timeout for task completion
+	ticker := time.NewTicker(10 * time.Millisecond)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-timeout:
+			// Log or handle timeout - for now, we'll proceed to close channels
+			// In a production system, you might want to log this condition
+			goto cleanup
+		case <-ticker.C:
+			stats := cr.pool.Stats()
+			if stats.TasksProcessing == 0 {
+				goto cleanup
+			}
+		}
 	}
-	cr.results = make(map[string]chan TaskResult)
+
+cleanup:
+
+	cr.resultsMu.Lock()
+	for taskID, ch := range cr.results {
+		close(ch)
+		delete(cr.results, taskID)
+	}
 	cr.resultsMu.Unlock()
 }
 
 func (cr *ConcurrentRenderer) RenderAsync(tmplFS fs.FS, templatePath, outputPath string, data any) (string, <-chan TaskResult, error) {
+	// Check if renderer is stopped to prevent new task submission
+	if atomic.LoadInt32(&cr.stopped) != 0 {
+		return "", nil, fmt.Errorf("concurrent renderer is stopped")
+	}
+
 	taskID := fmt.Sprintf("task-%d", atomic.AddInt64(&cr.taskIDGen, 1))
 
 	resultChan := make(chan TaskResult, 1)
@@ -275,6 +309,11 @@ func (cr *ConcurrentRenderer) RenderAsync(tmplFS fs.FS, templatePath, outputPath
 func (cr *ConcurrentRenderer) RenderBatch(requests []RenderRequest) ([]TaskResult, error) {
 	if len(requests) == 0 {
 		return nil, nil
+	}
+
+	// Check if renderer is stopped
+	if atomic.LoadInt32(&cr.stopped) != 0 {
+		return nil, fmt.Errorf("concurrent renderer is stopped")
 	}
 
 	var results []TaskResult

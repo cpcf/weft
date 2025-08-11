@@ -89,7 +89,7 @@ func (r *Renderer) renderFile(ctx Context, templatePath string, data any) error 
 	if r.postprocessors.HasProcessors() {
 		processed, err := r.postprocessors.Process(outputPath, content)
 		if err != nil {
-			r.logger.Warn("post-processing failed", "path", outputPath, "error", err)
+			r.logger.Error("post-processing failed", "path", outputPath, "error", err)
 			// Continue with unprocessed content rather than failing
 		} else {
 			content = processed

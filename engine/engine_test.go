@@ -1,12 +1,14 @@
 package engine
 
 import (
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	gogentest "github.com/cpcf/weft/testing"
+	"github.com/cpcf/weft/postprocess"
 )
 
 func TestEngineBasic(t *testing.T) {
@@ -155,4 +157,96 @@ func TestTemplateCacheKeyCollision(t *testing.T) {
 	if buf1.String() == buf2.String() {
 		t.Error("Templates from different filesystems should be cached separately")
 	}
+}
+
+func TestConcurrentRenderer_Stop_RaceCondition(t *testing.T) {
+	memFS := gogentest.NewMemoryFS()
+	memFS.WriteFile("templates/test.go.tmpl", []byte("package {{.Package}}"))
+
+	tempDir, err := os.MkdirTemp("", "concurrent-renderer-test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	// Create renderer components manually
+	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
+	cache := NewTemplateCache()
+	postprocessors := postprocess.NewChain()
+	testRenderer := NewRenderer(logger, cache, postprocessors)
+	renderer := NewConcurrentRenderer(4, *testRenderer)
+	renderer.Start()
+
+	// Start multiple concurrent render operations
+	numTasks := 50
+	taskIDs := make([]string, 0, numTasks)
+	resultChans := make([]<-chan TaskResult, 0, numTasks)
+
+	for i := 0; i < numTasks; i++ {
+		data := map[string]any{"Package": "test"}
+		outputPath := filepath.Join(tempDir, "test.go")
+		
+		taskID, resultChan, err := renderer.RenderAsync(memFS, "templates/test.go.tmpl", outputPath, data)
+		if err != nil {
+			// Expected if renderer is stopped during task submission
+			continue
+		}
+		
+		taskIDs = append(taskIDs, taskID)
+		resultChans = append(resultChans, resultChan)
+		
+		// Stop the renderer in the middle of submitting tasks
+		if i == 10 {
+			go func() {
+				renderer.Stop()
+			}()
+		}
+	}
+
+	// Try to collect results from submitted tasks
+	// This should not panic even if Stop() was called concurrently
+	completedTasks := 0
+	for _, resultChan := range resultChans {
+		select {
+		case result := <-resultChan:
+			if result.Success {
+				completedTasks++
+			}
+		default:
+			// Channel might be closed, which is expected
+		}
+	}
+
+	// Make sure Stop() has completed
+	renderer.Stop()
+
+	// Verify renderer rejects new tasks after stop
+	_, _, err = renderer.RenderAsync(memFS, "templates/test.go.tmpl", filepath.Join(tempDir, "test2.go"), map[string]any{"Package": "test"})
+	if err == nil {
+		t.Error("Expected error when submitting task to stopped renderer")
+	}
+	if !strings.Contains(err.Error(), "stopped") {
+		t.Errorf("Expected error message to contain 'stopped', got: %v", err)
+	}
+
+	// Multiple Stop() calls should be safe
+	renderer.Stop()
+
+	// Verify batch operations also reject when stopped
+	requests := []RenderRequest{{
+		TmplFS:       memFS,
+		TemplatePath: "templates/test.go.tmpl",
+		OutputPath:   filepath.Join(tempDir, "batch-test.go"),
+		Data:         map[string]any{"Package": "test"},
+	}}
+	
+	_, err = renderer.RenderBatch(requests)
+	if err == nil {
+		t.Error("Expected error when running batch operation on stopped renderer")
+	}
+	if !strings.Contains(err.Error(), "stopped") {
+		t.Errorf("Expected error message to contain 'stopped', got: %v", err)
+	}
+
+	t.Logf("Test completed successfully. Completed %d out of %d submitted tasks", completedTasks, len(resultChans))
 }
