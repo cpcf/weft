@@ -1,14 +1,16 @@
 # gogenkit
 
-A Go template engine for code generation with state management, debugging, and testing utilities.
+A Go template engine for code generation with extensible post-processing, state management, debugging, and testing utilities.
 
 ## Overview
 
-gogenkit provides a modular template processing system designed for generating code and managing output files. It includes template rendering, file state tracking, debugging capabilities, and testing utilities.
+gogenkit provides a modular template processing system designed for generating code and managing output files. It includes template rendering, extensible post-processing, file state tracking, debugging capabilities, and testing utilities.
 
 ## Packages
 
 - **[engine](engine/)** - Core template processing with caching and concurrent rendering
+- **[postprocess](postprocess/)** - Extensible post-processing framework for transforming generated content
+- **[processors](processors/)** - Built-in post-processors (Go imports, whitespace cleanup, headers, etc.)
 - **[render](render/)** - Template discovery, blocks, includes, and function registry  
 - **[write](write/)** - File writing with coordination, locking, and composite operations
 - **[state](state/)** - File tracking, manifest management, and cleanup operations
@@ -22,24 +24,70 @@ package main
 
 import (
     "github.com/cpcf/gogenkit/engine"
-    "github.com/cpcf/gogenkit/render"
-    "github.com/cpcf/gogenkit/write"
+    "github.com/cpcf/gogenkit/processors"
 )
 
 func main() {
     // Create template engine
     eng := engine.New(
-        engine.WithTemplateFS(templateFS),
-        engine.WithOutputPath("generated/"),
+        engine.WithOutputRoot("./generated"),
+        engine.WithFailureMode(engine.FailFast),
     )
 
-    // Create writers
-    writer := write.NewFileWriter()
+    // Add post-processors for generated content
+    eng.AddPostProcessor(processors.NewGoImports())                // Fix Go imports & formatting
+    eng.AddPostProcessor(processors.NewTrimWhitespace())           // Clean whitespace
+    eng.AddPostProcessor(processors.NewAddGeneratedHeader("myapp", ".go")) // Add headers
     
-    // Render templates
-    err := eng.RenderTemplate("template.tmpl", data, writer)
-    if err != nil {
-        panic(err)
+    // Create context
+    ctx := engine.NewContext(templateFS, "./generated", "mypackage")
+    
+    // Render templates with post-processing
+    if err := eng.RenderDir(ctx, "templates", data); err != nil {
+        log.Fatal(err)
     }
 }
 ```
+
+## Post-Processing System
+
+gogenkit includes an extensible post-processing framework that transforms generated content:
+
+### Built-in Processors
+
+- **Go Imports** - Automatically fixes imports and formats Go code using `goimports`
+- **Trim Whitespace** - Removes trailing whitespace from all lines
+- **Generated Headers** - Adds "Code generated" headers to files
+- **Regex Replace** - Custom regex-based transformations
+
+### Custom Processors
+
+Create custom processors by implementing the `postprocess.Processor` interface:
+
+```go
+type MyProcessor struct{}
+
+func (p *MyProcessor) ProcessContent(filePath string, content []byte) ([]byte, error) {
+    if strings.HasSuffix(filePath, ".go") {
+        // Custom Go transformations
+        return transformGoCode(content), nil
+    }
+    return content, nil
+}
+
+// Add to engine
+eng.AddPostProcessor(&MyProcessor{})
+```
+
+### Function-based Processors
+
+For simple transformations, use function processors:
+
+```go
+eng.AddPostProcessorFunc(func(filePath string, content []byte) ([]byte, error) {
+    // Convert line endings to Unix style
+    return bytes.ReplaceAll(content, []byte("\r\n"), []byte("\n")), nil
+})
+```
+
+See [postprocess/README.md](postprocess/README.md) for comprehensive documentation.
