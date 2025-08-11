@@ -88,9 +88,9 @@ func main() {
 	)
 
 	// Add post-processors for generated files
-	eng.AddPostProcessor(processors.NewGoImports())                           // Fix Go imports
-	eng.AddPostProcessor(processors.NewTrimWhitespace())                      // Clean up whitespace
-	eng.AddPostProcessor(processors.NewAddGeneratedHeader("gogenkit", ".go")) // Add generated headers
+	eng.AddPostProcessor(processors.NewGoImports())                       // Fix Go imports
+	eng.AddPostProcessor(processors.NewTrimWhitespace())                  // Clean up whitespace
+	eng.AddPostProcessor(processors.NewAddGeneratedHeader("weft", ".go")) // Add generated headers
 
 	// Create context with embedded filesystem
 	ctx := engine.NewContext(templateFS, "./generated", apiSpec.Package)

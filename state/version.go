@@ -121,12 +121,12 @@ func (vm *VersionManager) migrateFrom0_0(manifest *Manifest) error {
 	}
 
 	if manifest.Generator == "" {
-		manifest.Generator = "gogenkit"
+		manifest.Generator = "weft"
 	}
 
 	for path, entry := range manifest.Entries {
 		if entry.GeneratedBy == "" {
-			entry.GeneratedBy = "gogenkit"
+			entry.GeneratedBy = "weft"
 			manifest.Entries[path] = entry
 		}
 	}

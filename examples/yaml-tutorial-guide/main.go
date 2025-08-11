@@ -1,13 +1,13 @@
-// YAML Configuration Tutorial for gogenkit
+// YAML Configuration Tutorial for weft
 // ======================================
 //
 // This example demonstrates how to create your own YAML-based configuration
-// system using the gogenkit toolkit. You'll learn how to:
+// system using the weft toolkit. You'll learn how to:
 //
 // 1. Define a custom specification struct with YAML tags
 // 2. Implement validation for your configuration
 // 3. Load YAML files using the generic config loader
-// 4. Use your configuration with the gogenkit engine
+// 4. Use your configuration with the weft engine
 // 5. Generate code from templates based on your YAML config
 //
 // This tutorial uses a simple "database schema generator" as an example,
@@ -69,12 +69,12 @@ func main() {
 		return
 	}
 
-	// STEP 4: Create and configure the gogenkit engine
+	// STEP 4: Create and configure the weft engine
 	// ===============================================
 	// The engine handles template processing and file generation.
 	// You can customize the output directory and failure behavior.
 
-	fmt.Printf("Setting up gogenkit engine...\n")
+	fmt.Printf("Setting up weft engine...\n")
 
 	eng := engine.New(
 		engine.WithOutputRoot("./generated"),
@@ -85,9 +85,9 @@ func main() {
 	// =====================================================
 	// Post-processors clean up generated files and add helpful metadata.
 
-	eng.AddPostProcessor(processors.NewGoImports())                           // Fix Go imports
-	eng.AddPostProcessor(processors.NewTrimWhitespace())                      // Clean up whitespace
-	eng.AddPostProcessor(processors.NewAddGeneratedHeader("gogenkit", ".go")) // Add generated headers
+	eng.AddPostProcessor(processors.NewGoImports())                       // Fix Go imports
+	eng.AddPostProcessor(processors.NewTrimWhitespace())                  // Clean up whitespace
+	eng.AddPostProcessor(processors.NewAddGeneratedHeader("weft", ".go")) // Add generated headers
 
 	// STEP 6: Create template context and generate code
 	// ================================================

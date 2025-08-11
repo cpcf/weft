@@ -108,7 +108,7 @@ func (mm *ManifestManager) AddEntry(manifest *Manifest, path, templatePath strin
 		Hash:         hash,
 		Size:         stat.Size(),
 		ModTime:      stat.ModTime(),
-		GeneratedBy:  "gogenkit",
+		GeneratedBy:  "weft",
 		TemplatePath: templatePath,
 		Metadata:     metadata,
 	}
@@ -180,7 +180,7 @@ func (mm *ManifestManager) createEmptyManifest() *Manifest {
 	return &Manifest{
 		Version:    "1.0",
 		Generated:  time.Now(),
-		Generator:  "gogenkit",
+		Generator:  "weft",
 		OutputRoot: mm.outputRoot,
 		Entries:    make(map[string]ManifestEntry),
 		Metadata:   make(map[string]string),

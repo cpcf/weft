@@ -1,4 +1,4 @@
-// Package config provides generic configuration loading capabilities for gogenkit
+// Package config provides generic configuration loading capabilities for weft
 package config
 
 import (

@@ -7,15 +7,15 @@ import (
 	"strings"
 	"testing"
 
-	gogentest "github.com/cpcf/weft/testing"
 	"github.com/cpcf/weft/postprocess"
+	gogentest "github.com/cpcf/weft/testing"
 )
 
 func TestEngineBasic(t *testing.T) {
 	memFS := gogentest.NewMemoryFS()
 	memFS.WriteFile("templates/hello.go.tmpl", []byte("package {{.Package}}\n\nconst Message = \"{{.Message}}\"\n"))
 
-	tempDir, err := os.MkdirTemp("", "gogenkit-test")
+	tempDir, err := os.MkdirTemp("", "weft-test")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -50,7 +50,7 @@ func TestEngineTemplateParseError(t *testing.T) {
 	memFS := gogentest.NewMemoryFS()
 	memFS.WriteFile("templates/bad.go.tmpl", []byte("package {{.Package\n\nconst Message = \"invalid\"")) // Missing closing brace
 
-	tempDir, err := os.MkdirTemp("", "gogenkit-test")
+	tempDir, err := os.MkdirTemp("", "weft-test")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -75,7 +75,7 @@ func TestEngineFailureModes(t *testing.T) {
 	memFS.WriteFile("templates/good.go.tmpl", []byte("package {{.Package}}"))
 	memFS.WriteFile("templates/bad.go.tmpl", []byte("package {{.Package")) // Missing closing brace
 
-	tempDir, err := os.MkdirTemp("", "gogenkit-test")
+	tempDir, err := os.MkdirTemp("", "weft-test")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -185,16 +185,16 @@ func TestConcurrentRenderer_Stop_RaceCondition(t *testing.T) {
 	for i := 0; i < numTasks; i++ {
 		data := map[string]any{"Package": "test"}
 		outputPath := filepath.Join(tempDir, "test.go")
-		
+
 		taskID, resultChan, err := renderer.RenderAsync(memFS, "templates/test.go.tmpl", outputPath, data)
 		if err != nil {
 			// Expected if renderer is stopped during task submission
 			continue
 		}
-		
+
 		taskIDs = append(taskIDs, taskID)
 		resultChans = append(resultChans, resultChan)
-		
+
 		// Stop the renderer in the middle of submitting tasks
 		if i == 10 {
 			go func() {
@@ -239,7 +239,7 @@ func TestConcurrentRenderer_Stop_RaceCondition(t *testing.T) {
 		OutputPath:   filepath.Join(tempDir, "batch-test.go"),
 		Data:         map[string]any{"Package": "test"},
 	}}
-	
+
 	_, err = renderer.RenderBatch(requests)
 	if err == nil {
 		t.Error("Expected error when running batch operation on stopped renderer")

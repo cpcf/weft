@@ -1,7 +1,7 @@
 // Package spec defines the database schema specification types for the YAML tutorial.
 //
 // This file demonstrates how to create your own custom specification types
-// that work with the gogenkit config system. The key principles are:
+// that work with the weft config system. The key principles are:
 //
 // 1. Use YAML tags on all struct fields for explicit field mapping
 // 2. Implement the config.Validator interface for custom validation
