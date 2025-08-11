@@ -122,3 +122,11 @@ func main() {
 ```
 
 See [config/README.md](config/README.md) for detailed documentation including validation and testing utilities.
+
+## Examples
+
+The repository includes complete working examples that demonstrate real-world usage patterns:
+
+- **[api-client-generator](examples/api-client-generator/)** - Generate complete Go API clients from YAML specifications. Shows complex template logic, professional code generation patterns, and realistic use cases for REST API client libraries.
+
+- **[yaml-tutorial-guide](examples/yaml-tutorial-guide/)** - Comprehensive tutorial for building YAML-based configuration systems. Learn to create custom specifications, implement validation, and integrate with gogenkit templates.
