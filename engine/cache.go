@@ -5,6 +5,8 @@ import (
 	"sync"
 	"text/template"
 	"unsafe"
+
+	"github.com/cpcf/gogenkit/render"
 )
 
 type cacheKey struct {
@@ -48,7 +50,7 @@ func (c *TemplateCache) Get(fsys fs.FS, path string) (*template.Template, error)
 		return nil, err
 	}
 
-	tmpl, err := template.New(path).Parse(string(content))
+	tmpl, err := template.New(path).Funcs(render.DefaultFuncMap()).Parse(string(content))
 	if err != nil {
 		return nil, err
 	}
