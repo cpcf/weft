@@ -1,3 +1,4 @@
+// Package render provides template rendering functionality.
 package render
 
 import (

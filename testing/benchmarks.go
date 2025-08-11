@@ -1,3 +1,4 @@
+// Package testing provides utilities for testing and benchmarking.
 package testing
 
 import (

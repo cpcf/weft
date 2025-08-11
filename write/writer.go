@@ -1,3 +1,4 @@
+// Package write provides a generic interface for writing files.
 package write
 
 import (

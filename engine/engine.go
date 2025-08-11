@@ -1,3 +1,4 @@
+// Package engine provides the core template rendering and post-processing functionality.
 package engine
 
 import (

@@ -1,3 +1,4 @@
+// Package debug provides helpers for debugging template rendering.
 package debug
 
 import (

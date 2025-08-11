@@ -1,3 +1,4 @@
+// Package state provides a manifest for tracking the state of generated files.
 package state
 
 import (
