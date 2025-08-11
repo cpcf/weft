@@ -7,17 +7,21 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/cpcf/gogenkit/postprocess"
 )
 
 type Renderer struct {
-	logger *slog.Logger
-	cache  *TemplateCache
+	logger         *slog.Logger
+	cache          *TemplateCache
+	postprocessors *postprocess.Chain
 }
 
-func NewRenderer(logger *slog.Logger, cache *TemplateCache) *Renderer {
+func NewRenderer(logger *slog.Logger, cache *TemplateCache, postprocessors *postprocess.Chain) *Renderer {
 	return &Renderer{
-		logger: logger,
-		cache:  cache,
+		logger:         logger,
+		cache:          cache,
+		postprocessors: postprocessors,
 	}
 }
 
@@ -73,18 +77,28 @@ func (r *Renderer) renderFile(ctx Context, templatePath string, data any) error 
 		return err
 	}
 
-	file, err := os.Create(outputPath)
-	if err != nil {
-		return fmt.Errorf("failed to create output file %s: %w", outputPath, err)
-	}
-	defer func() {
-		if closeErr := file.Close(); closeErr != nil {
-			r.logger.Warn("failed to close file", "path", outputPath, "error", closeErr)
-		}
-	}()
-
-	if err := tmpl.Execute(file, data); err != nil {
+	// Render template to buffer first
+	var buf strings.Builder
+	if err := tmpl.Execute(&buf, data); err != nil {
 		return fmt.Errorf("failed to execute template %s: %w", templatePath, err)
+	}
+
+	content := []byte(buf.String())
+
+	// Apply post-processing if any processors are configured
+	if r.postprocessors.HasProcessors() {
+		processed, err := r.postprocessors.Process(outputPath, content)
+		if err != nil {
+			r.logger.Warn("post-processing failed", "path", outputPath, "error", err)
+			// Continue with unprocessed content rather than failing
+		} else {
+			content = processed
+		}
+	}
+
+	// Write the final content to file
+	if err := os.WriteFile(outputPath, content, 0o644); err != nil {
+		return fmt.Errorf("failed to write output file %s: %w", outputPath, err)
 	}
 
 	r.logger.Info("rendered template", "template", templatePath, "output", outputPath)
