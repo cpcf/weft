@@ -1,0 +1,57 @@
+{{/*
+Template: models.go.tmpl
+Purpose: Generate Go struct models for database tables
+
+This template demonstrates how to access your YAML configuration data
+within templates. The configuration is available as {{ .Schema }}.
+
+Tutorial notes:
+- Use {{ range }} to iterate over arrays/slices
+- Use {{ if }} for conditional logic  
+- Use functions like title, lower, upper for string manipulation
+- Access nested fields with dot notation: .Schema.Database.Driver
+*/}}
+
+package {{ .Schema.Package }}
+
+import (
+	"time"
+)
+
+{{/* Generate a struct for each table */}}
+{{- range .Schema.Tables }}
+
+// {{ title .Name }} represents a record from the {{ .Name }} table.
+{{- if .Description }}
+// {{ .Description }}
+{{- end }}
+type {{ title .Name }} struct {
+	{{- range .Fields }}
+	{{- $goType := "interface{}" }}
+	{{- if eq .Type "string" }}{{ $goType = "string" }}{{ end }}
+	{{- if eq .Type "text" }}{{ $goType = "string" }}{{ end }}
+	{{- if eq .Type "integer" }}{{ $goType = "int64" }}{{ end }}
+	{{- if eq .Type "bigint" }}{{ $goType = "int64" }}{{ end }}
+	{{- if eq .Type "decimal" }}{{ $goType = "float64" }}{{ end }}
+	{{- if eq .Type "float" }}{{ $goType = "float64" }}{{ end }}
+	{{- if eq .Type "boolean" }}{{ $goType = "bool" }}{{ end }}
+	{{- if eq .Type "date" }}{{ $goType = "time.Time" }}{{ end }}
+	{{- if eq .Type "timestamp" }}{{ $goType = "time.Time" }}{{ end }}
+	{{- if eq .Type "uuid" }}{{ $goType = "string" }}{{ end }}
+	{{- if eq .Type "json" }}{{ $goType = "interface{}" }}{{ end }}
+	{{- if .PrimaryKey }}
+	{{ title .Name }} {{ $goType }} `json:"{{ .Name }}" db:"{{ .Name }}"` // Primary key{{ if .Description }}: {{ .Description }}{{ end }}
+	{{- else if .ForeignKey }}
+	{{ title .Name }} {{ $goType }} `json:"{{ .Name }}" db:"{{ .Name }}"` // Foreign key to {{ .ForeignKey }}{{ if .Description }}: {{ .Description }}{{ end }}
+	{{- else }}
+	{{ title .Name }} {{ $goType }} `json:"{{ .Name }}" db:"{{ .Name }}"` {{- if .Description }} // {{ .Description }}{{ end }}
+	{{- end }}
+	{{- end }}
+}
+
+// TableName returns the database table name for {{ title .Name }}
+func (m *{{ title .Name }}) TableName() string {
+	return "{{ .Name }}"
+}
+
+{{- end }}

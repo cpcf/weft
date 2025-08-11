@@ -1,0 +1,154 @@
+{{/*
+Template: repository.go.tmpl
+Purpose: Generate repository/DAO layer for database operations
+
+This template demonstrates more advanced Go template features including:
+- Nested loops and conditionals
+- String manipulation functions
+- Building method names and signatures dynamically
+*/}}
+
+package {{ .Schema.Package }}
+
+import (
+	"database/sql"
+	"fmt"
+	"time"
+)
+
+// Database connection and configuration
+type DB struct {
+	conn   *sql.DB
+	config DatabaseConfig
+}
+
+// DatabaseConfig holds database connection parameters
+type DatabaseConfig struct {
+	Driver string
+	Host   string
+	Port   int
+	Name   string
+}
+
+// NewDB creates a new database connection
+func NewDB() (*DB, error) {
+	config := DatabaseConfig{
+		Driver: "{{ .Schema.Database.Driver }}",
+		Host:   "{{ .Schema.Database.Host }}",
+		Port:   {{ .Schema.Database.Port }},
+		Name:   "{{ .Schema.Database.Name }}",
+	}
+	
+	// Build connection string based on driver
+	var connStr string
+	switch config.Driver {
+	case "postgres":
+		connStr = fmt.Sprintf("postgres://%s:%d/%s?sslmode=disable", 
+			config.Host, config.Port, config.Name)
+	case "mysql":
+		connStr = fmt.Sprintf("%s:%d/%s", config.Host, config.Port, config.Name)
+	case "sqlite":
+		connStr = config.Name
+	default:
+		return nil, fmt.Errorf("unsupported database driver: %s", config.Driver)
+	}
+	
+	conn, err := sql.Open(config.Driver, connStr)
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to database: %w", err)
+	}
+	
+	return &DB{
+		conn:   conn,
+		config: config,
+	}, nil
+}
+
+// Close closes the database connection
+func (db *DB) Close() error {
+	return db.conn.Close()
+}
+
+{{/* Generate repository methods for each table */}}
+{{- range .Schema.Tables }}
+{{- $modelName := title .Name }}
+{{- $tableName := .Name }}
+{{- $pkField := "" }}
+{{- range .Fields }}{{- if .PrimaryKey }}{{- $pkField = .Name }}{{- end }}{{- end }}
+
+// {{ $modelName }}Repository provides database operations for {{ .Name }}
+type {{ $modelName }}Repository struct {
+	db *DB
+}
+
+// New{{ $modelName }}Repository creates a new repository instance
+func New{{ $modelName }}Repository(db *DB) *{{ $modelName }}Repository {
+	return &{{ $modelName }}Repository{db: db}
+}
+
+// Create inserts a new {{ lower $modelName }} record
+func (r *{{ $modelName }}Repository) Create({{ lower $modelName }} *{{ $modelName }}) error {
+	// Set timestamps if fields exist
+	{{- range .Fields }}
+	{{- if eq .Name "created_at" }}
+	{{ lower $modelName }}.{{ title .Name }} = time.Now()
+	{{- end }}
+	{{- if eq .Name "updated_at" }}
+	{{ lower $modelName }}.{{ title .Name }} = time.Now()
+	{{- end }}
+	{{- end }}
+	
+	// Simple INSERT query - in production you'd build this dynamically
+	_, err := r.db.conn.Exec("INSERT INTO {{ $tableName }} DEFAULT VALUES")
+	return err
+}
+
+// GetByID retrieves a {{ lower $modelName }} by its primary key
+func (r *{{ $modelName }}Repository) GetByID(id interface{}) (*{{ $modelName }}, error) {
+	query := `SELECT {{ range $i, $field := .Fields }}{{ $field.Name }}{{ if ne $i (len $.Fields | add -1) }}, {{ end }}{{ end }} FROM {{ $tableName }} WHERE {{ $pkField }} = $1`
+	
+	var {{ lower $modelName }} {{ $modelName }}
+	err := r.db.conn.QueryRow(query, id).Scan(
+		{{- range $i, $field := .Fields }}
+		&{{ lower $modelName }}.{{ title $field.Name }}{{ if ne $i (len $.Fields | add -1) }},{{ end }}
+		{{- end }}
+	)
+	
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+	
+	return &{{ lower $modelName }}, nil
+}
+
+// List retrieves all {{ .Name }} with optional pagination
+func (r *{{ $modelName }}Repository) List(limit, offset int) ([]*{{ $modelName }}, error) {
+	query := `SELECT {{ range $i, $field := .Fields }}{{ $field.Name }}{{ if ne $i (len $.Fields | add -1) }}, {{ end }}{{ end }} FROM {{ $tableName }} ORDER BY {{ $pkField }} LIMIT $1 OFFSET $2`
+	
+	rows, err := r.db.conn.Query(query, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	
+	var results []*{{ $modelName }}
+	for rows.Next() {
+		var {{ lower $modelName }} {{ $modelName }}
+		err := rows.Scan(
+			{{- range $i, $field := .Fields }}
+			&{{ lower $modelName }}.{{ title $field.Name }}{{ if ne $i (len $.Fields | add -1) }},{{ end }}
+			{{- end }}
+		)
+		if err != nil {
+			return nil, err
+		}
+		results = append(results, &{{ lower $modelName }})
+	}
+	
+	return results, rows.Err()
+}
+
+{{- end }}
