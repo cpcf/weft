@@ -128,8 +128,6 @@ See [config/README.md](config/README.md) for detailed documentation including va
 
 ## Examples
 
-The repository includes complete working examples that demonstrate real-world usage patterns:
+- **[api-client-generator](examples/api-client-generator/)** - Generates a Go API client from a structured configuration.
 
-- **[api-client-generator](examples/api-client-generator/)** - Generate complete Go API clients from YAML specifications. Shows complex template logic, professional code generation patterns, and realistic use cases for REST API client libraries.
-
-- **[yaml-tutorial-guide](examples/yaml-tutorial-guide/)** - Example of building YAML-based configuration systems. Learn to create custom specifications, implement validation, and integrate with weft templates.
+- **[yaml-tutorial-guide](examples/yaml-tutorial-guide/)** - Example of building YAML-based configuration systems.
