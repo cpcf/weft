@@ -4,10 +4,6 @@
 
 A Go template engine for code generation with extensible post-processing, state management, debugging, and testing utilities.
 
-## Overview
-
-weft provides a modular template processing system designed for generating code and managing output files. It includes template rendering, extensible post-processing, file state tracking, debugging capabilities, and testing utilities.
-
 ## Packages
 
 - **[config](config/)** - Generic YAML configuration loading with validation support
@@ -131,4 +127,4 @@ The repository includes complete working examples that demonstrate real-world us
 
 - **[api-client-generator](examples/api-client-generator/)** - Generate complete Go API clients from YAML specifications. Shows complex template logic, professional code generation patterns, and realistic use cases for REST API client libraries.
 
-- **[yaml-tutorial-guide](examples/yaml-tutorial-guide/)** - Comprehensive tutorial for building YAML-based configuration systems. Learn to create custom specifications, implement validation, and integrate with weft templates.
+- **[yaml-tutorial-guide](examples/yaml-tutorial-guide/)** - Example of building YAML-based configuration systems. Learn to create custom specifications, implement validation, and integrate with weft templates.
